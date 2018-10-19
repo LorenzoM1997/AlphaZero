@@ -1,22 +1,24 @@
 import numpy as np
 
+
 class Game:
 
-    def __init__(self,num_rows, num_cols, action_space, obs_space):
+    def __init__(self, num_rows, num_cols, action_space, obs_space):
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.action_space = action_space
         self.obs_space = obs_space
 
+
 class TicTacToe(Game):
 
     def __init__(self):
-        self.board = np.zeros((3,3),dtype=np.uint8)
+        self.board = np.zeros((3, 3), dtype=np.uint8)
         self.terminal = False
-        super().__init__(3,3,9,27)
+        super().__init__(3, 3, 9, 27)
 
     def restart(self):
-        self.board = np.zeros((3,3),dtype=np.uint8)
+        self.board = np.zeros((3, 3), dtype=np.uint8)
         self.terminal = False
 
     def is_valid(self, action):
@@ -33,7 +35,7 @@ class TicTacToe(Game):
                 elif(self.board[row][col] == 2):
                     self.board[row][col] = 1
 
-    def step(self,action):
+    def step(self, action):
         """
         PARAMS: a valid action (int 0 to 8)
         RETURN: reward (-1,0,1)
@@ -100,21 +102,21 @@ class TicTacToe(Game):
                     break
         if terminal == 1:
             self.terminal = True
-            
+
         return 0
 
     def render(self):
         """
         print to screen the full board nicely
         """
-        
+
         for i in range(3):
             print('\n|', end="")
             for j in range(3):
                 if self.board[i][j] == 1:
-                    print(' X |' , end="")
+                    print(' X |', end="")
                 elif self.board[i][j] == 0:
-                    print('   |' , end="")
+                    print('   |', end="")
                 else:
-                    print(' O |' , end="")
+                    print(' O |', end="")
         print('\n')
