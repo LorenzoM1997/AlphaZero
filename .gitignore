@@ -1,2 +1,5 @@
 
 *.pyproj
+.vs/AlphaZero/v15/.suo
+*.sln
+*.pyc
