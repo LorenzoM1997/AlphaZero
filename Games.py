@@ -16,7 +16,7 @@ class TicTacToe(Game):
     def __init__(self):
         self.board = np.zeros((3, 3), dtype=np.uint8)
         self.terminal = False
-        action_space = np.arange(0,8)
+        action_space = np.arange(0, 9)
         super().__init__(3, 3, 3, action_space)
 
     def restart(self):

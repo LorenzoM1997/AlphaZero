@@ -6,13 +6,23 @@ from Games import *
 game = TicTacToe()
 action_space = game.action_space
 
-def epsilon_greedy(action_space, obs):
+
+def random_move():
+    global game
+    action = np.random.choice(game.action_space)
+    while not game.is_valid(action):
+        action = np.random.choice(game.action_space)
+    return action
+
+
+def epsilon_greedy():
+
     epsilon = 0.1
     if random.random() < 0.1:
-        action = np.random.choice(action_space)
+        action = random_move()
     else:
         # FIXME: should choose the best choice through the MCTS
-        action = 0
+        action = random_move()
     return action
 
 
@@ -24,9 +34,10 @@ for i in range(n_episodes):
 
     while not game.terminal:
 
+        game.render()
+
         # collect observations
-        obs = game.board
-        action = epsilon_greedy(action_space, obs)
+        action = epsilon_greedy()
         reward = game.step(action)
 
         # now will be the turn of the other player
