@@ -36,3 +36,4 @@ The games should also have variables such as
     observation_space
     num_rows
     num_cols
+    num_layers
