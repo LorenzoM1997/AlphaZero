@@ -3,11 +3,12 @@ import numpy as np
 
 class Game:
 
-    def __init__(self, num_rows, num_cols, action_space, obs_space):
+    def __init__(self, num_rows, num_cols, num_layers, action_space):
         self.num_rows = num_rows
         self.num_cols = num_cols
+        self.num_layers = num_layers
         self.action_space = action_space
-        self.obs_space = obs_space
+        self.obs_space = num_rows * num_cols * num_layers
 
 
 class TicTacToe(Game):
@@ -16,7 +17,7 @@ class TicTacToe(Game):
         self.board = np.zeros((3, 3), dtype=np.uint8)
         self.terminal = False
         action_space = np.arange(0,8)
-        super().__init__(3, 3, action_space, 27)
+        super().__init__(3, 3, 3, action_space)
 
     def restart(self):
         self.board = np.zeros((3, 3), dtype=np.uint8)
