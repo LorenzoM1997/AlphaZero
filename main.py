@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from Games import *
+from MCTS import *
 
 game = TicTacToe()
 action_space = game.action_space
@@ -23,7 +24,8 @@ def epsilon_greedy(greedy_move):
         action = greedy_move()
     return action
 
-def simulation(n_episodes = 100, opponent = random_move):
+
+def simulation(n_episodes=100, opponent=random_move):
     for i in range(n_episodes):
 
         # restart the game
@@ -36,12 +38,14 @@ def simulation(n_episodes = 100, opponent = random_move):
 
             # collect observations
             if player:
-                action = epsilon_greedy(random_move) # FIXME: should choose the best choice through the MCTS
+                # FIXME: should choose the best choice through the MCTS
+                action = epsilon_greedy(random_move)
             else:
-                action = opponent() 
+                action = opponent()
             reward = game.step(action)
 
             # now will be the turn of the other player
             game.invert_board()
+
 
 simulation()
