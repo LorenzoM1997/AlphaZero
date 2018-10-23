@@ -15,30 +15,33 @@ def random_move():
     return action
 
 
-def epsilon_greedy():
-
+def epsilon_greedy(greedy_move):
     epsilon = 0.1
     if random.random() < 0.1:
         action = random_move()
     else:
-        # FIXME: should choose the best choice through the MCTS
-        action = random_move()
+        action = greedy_move()
     return action
 
+def simulation(n_episodes = 100, opponent = random_move):
+    for i in range(n_episodes):
 
-n_episodes = 100
-for i in range(n_episodes):
+        # restart the game
+        game.restart()
+        player = n_episodes % 2
 
-    # restart the game
-    game.restart()
+        while not game.terminal:
 
-    while not game.terminal:
+            game.render()
 
-        game.render()
+            # collect observations
+            if player:
+                action = epsilon_greedy(random_move) # FIXME: should choose the best choice through the MCTS
+            else:
+                action = opponent() 
+            reward = game.step(action)
 
-        # collect observations
-        action = epsilon_greedy()
-        reward = game.step(action)
+            # now will be the turn of the other player
+            game.invert_board()
 
-        # now will be the turn of the other player
-        game.invert_board()
+simulation()
