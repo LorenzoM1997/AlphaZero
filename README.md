@@ -3,7 +3,12 @@ ECS 171 Machine Learning project
 
 ## Setup
 
-Everyone should have installed
+Some packages require an older version of python installed (particularly tensorflow, which as of this writing requires python3.5). To set up a virtual environment with the proper version, you should first have virtualenv installed, and then run:
+
+    virtualenv -p python3.5 venv
+    source venv/bin/activate
+
+Everyone should have installed:
 
     pip install tensorflow
     pip install numpy
