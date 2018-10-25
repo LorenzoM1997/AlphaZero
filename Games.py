@@ -9,24 +9,30 @@ class Game:
         self.num_layers = num_layers
         self.action_space = action_space
         self.obs_space = num_rows * num_cols * num_layers
+        self.terminal = False
+
+    def restart(self):
+        self.terminal = False
 
 
 class TicTacToe(Game):
     def __init__(self):
         self.board = np.zeros((3, 3), dtype=np.uint8)
-        self.terminal = False
         action_space = np.arange(0, 9)
         super().__init__(3, 3, 3, action_space)
 
     def restart(self):
+        super().restart()
         self.board = np.zeros((3, 3), dtype=np.uint8)
-        self.terminal = False
 
     def is_valid(self, action):
         if self.board[int(np.floor(action / 3))][action % 3] != 0:
             return False
         else:
             return True
+
+    def legal_moves(self):
+        NotImplemented() #FIXME: implement this
 
     def invert_board(self):
         for row in range(3):
@@ -122,14 +128,17 @@ class ConnectFour(Game):
         super().__init__(6, 7, 3, action_space)
 
     def restart(self):
+        super().restart()
         self.board = np.zeros((6, 7), dtype=np.uint8)
-        self.terminal = False
 
     def is_valid(self, action):
         if self.board[int(np.floor(action / 7))][action % 7] != 0:
             return False
         else:
             return True
+
+    def legal_moves(self):
+        NotImplemented() #FIXME: implement this
 
     def invert_board(self):
         for row in range(6):

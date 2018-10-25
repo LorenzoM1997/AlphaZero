@@ -48,4 +48,7 @@ def simulation(n_episodes=100, opponent=random_move):
             game.invert_board()
 
 
+# uncomment this when MCTS ready
+# mct = MCT(game)
+
 simulation()
