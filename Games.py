@@ -43,13 +43,13 @@ class TicTacToe(Game):
          self.board    is updated in the process
         self.terminal is updated in the process
         """
-         # insert
+        # insert
         row_index = int(np.floor(action / 3))
         col_index = action % 3
         self.board[row_index][col_index] = 1
-         # undecided
+        # undecided
         terminal = 1
-         # to check for 3 in a row horizontal
+        # to check for 3 in a row horizontal
         for row in range(3):
             for col in range(3):
                 if(self.board[row][col] != 1):
@@ -95,12 +95,13 @@ class TicTacToe(Game):
                     break
         if terminal == 1:
             self.terminal = True
-         return 0
+        return 0
+
     def render(self):
         """
         print to screen the full board nicely
         """
-         for i in range(3):
+        for i in range(3):
             print('\n|', end="")
             for j in range(3):
                 if self.board[i][j] == 1:
@@ -110,6 +111,7 @@ class TicTacToe(Game):
                 else:
                     print(' O |', end="")
         print('\n')
+
 
 class ConnectFour(Game):
 

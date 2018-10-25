@@ -4,6 +4,7 @@ import datetime
 from random import choice
 from math import log, sqrt
 
+
 class MCT:
     def __init__(self, board):
         self.board = board
@@ -84,7 +85,8 @@ class MCT:
         expand = True
         for t in range(1, self.max_moves + 1):
             legal = self.board.legal_plays(states_copy)
-            moves_states = [(p, self.board.next_state(state, p)) for p in legal]
+            moves_states = [(p, self.board.next_state(state, p))
+                            for p in legal]
 
             if all(plays.get((player, S)) for p, S in moves_states):
                 # If we have stats on all of the legal moves here, use them.
@@ -123,4 +125,3 @@ class MCT:
             plays[(player, state)] += 1
             if player == winner:
                 wins[(player, state)] += 1
-               
