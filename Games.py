@@ -150,7 +150,12 @@ class ConnectFour(Game):
             return True
 
     def legal_moves(self):
-        NotImplemented()  # FIXME: implement this
+        action_space = range(7)
+        legal_moves = []
+        for action in action_space:
+            if self.is_valid(action):
+                legal_moves.append(action)
+        return np.array(legal_moves)
 
     def invert_board(self):
         for row in range(6):
