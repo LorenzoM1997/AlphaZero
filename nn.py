@@ -18,16 +18,46 @@ class NN():
 		self.input_layers = input_layers
 		self.hidden_layers = hidden_layers
 
+	def batch_norm(inputs, training, BATCH_MOMENTUM = 0.997, BATCH_EPSILON = 1e-5):
+		return tf.layers.batch_normalization(
+			inputs=inputs, axis=-1, momentum=_BATCH_NORM_DECAY, 
+			epsilon=_BATCH_NORM_EPSILON, center=True, 
+			scale=True, training=training, fused=True)
 
-class resBlock(nn.Module):
-	"""
-	Args:
-		inplanes (int): Number of channels in the input image
-		filters (int): Number of channels in output image
-		kernelsize (int): Size of convolving kernel
-		padding (int): Padding added to sides of input
-		stride (it): Stride of convolution
-	"""
-	def __init__(self, inplanes, filter, kernelsize, strides = 1, padding):
-		input_layer = tf.reshape()
-		self.conv1 = tf.layers.Conv2D(input_layer, kernel_size=kernelsize, filter=filter, strides=strides, padding=padding)
+	def conv2d():
+		# WILL DO NEXT
+		return None
+
+	def resBlock(inputs, filter, kernelsize, training, strides=1, padding="same"):
+		"""
+		Args:
+			inputs (tensor): Tensor input
+			filter (int): Number of channels in the output
+			kernelsize (int,tuple): Size of convolution window
+			strides (int): Stride of convolution
+			padding (int): "valid" or "same"
+			training (bool): True if training
+		"""
+		shortcut = tf.identity(input)
+		conv1 = tf.layers.Conv2D(
+			inputs = inputs,
+			filters = filter, 
+			kernel_size = kernelsize, 
+			strides = strides, 
+			padding = padding, 
+			activation = None
+		)
+		conv1_bn = batch_norm(conv1, training)
+		conv1_bn_relu = tf.nn.relu(conv1_bn)
+		conv2 = tf.layers.Conv2D(
+			inputs = conv1_bn_relu,
+			filters = filter, 
+			kernel_size = kernelsize, 
+			strides = strides, 
+			padding = padding, 
+			activation = None
+		)
+		conv2_bn = batch_norm(conv2, training)
+		y = conv2_bn + shortcut
+		y_relu = tf.nn.relu(y)
+		return y
