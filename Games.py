@@ -11,14 +11,14 @@ class Game:
         self.action_space = action_space
         self.obs_space = num_rows * num_cols * num_layers
         self.terminal = False
-        
+
     def layers(self):
-    	layers = np.zeros((num_layers, num_rows, num_cols), dtype = np.uint8)
-    	for k in (0,num_layers):
-    		for i in num_rows:
-    			for j in num_cols:
-    				if self.board[i][j] == k:
-    					layers[k][i][j] == 1
+        layers = np.zeros((num_layers, num_rows, num_cols), dtype=np.uint8)
+        for k in (0, num_layers):
+            for i in num_rows:
+                for j in num_cols:
+                    if self.board[i][j] == k:
+                        layers[k][i][j] = 1
 
     def restart(self):
         self.terminal = False
@@ -186,7 +186,8 @@ class ConnectFour(Game):
 
         # insert
         col_index = action  # action is in range 0 - 6
-        row_index = (self.board[:, col_index] != 0).argmax(axis=0) - 1  # subtract one from index of top filled space
+        row_index = (self.board[:, col_index] != 0).argmax(
+            axis=0) - 1  # subtract one from index of top filled space
         self.board[row_index][col_index] = 1
 
         # undecided
