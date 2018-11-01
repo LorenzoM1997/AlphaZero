@@ -11,6 +11,14 @@ class Game:
         self.action_space = action_space
         self.obs_space = num_rows * num_cols * num_layers
         self.terminal = False
+        
+    def layers(self):
+    	layers = np.zeros((num_layers, num_rows, num_cols), dtype = np.uint8)
+    	for k in (0,num_layers):
+    		for i in num_rows:
+    			for j in num_cols:
+    				if self.board[i][j] == k:
+    					layers[k][i][j] == 1
 
     def restart(self):
         self.terminal = False
