@@ -13,12 +13,13 @@ class Game:
         self.terminal = False
 
     def layers(self):
-        layers = np.zeros((num_layers, num_rows, num_cols), dtype=np.uint8)
-        for k in (0, num_layers):
-            for i in num_rows:
-                for j in num_cols:
+        layers = np.zeros((self.num_layers, self.num_rows, self.num_cols), dtype=np.uint8)
+        for k in range(0, self.num_layers):
+            for i in range(self.num_rows):
+                for j in range(self.num_cols):
                     if self.board[i][j] == k:
                         layers[k][i][j] = 1
+        return layers
 
     def restart(self):
         self.terminal = False
