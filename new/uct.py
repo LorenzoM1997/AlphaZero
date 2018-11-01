@@ -96,6 +96,8 @@ class UCT(object):
         for t in range(1, self.max_actions + 1):
             legal = self.board.legal_actions(history_copy)
             actions_states = [(p, self.board.next_state(state, p)) for p in legal]
+            if actions_states == []:
+                break
 
             if all((player, S) in stats for p, S in actions_states):
                 # If we have stats on all of the legal actions here, use UCB1.

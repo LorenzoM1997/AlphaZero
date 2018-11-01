@@ -141,7 +141,6 @@ class Board(object):
         state = history[-1]
 
         occupied = state[0] | state[1]
-        print(occupied)
 
         actions = [
             (r, c)
@@ -168,7 +167,7 @@ class Board(object):
             return True
         if any(w & p2 == w for w in self.wins):
             return True
-        if state[0] & state[1] == 0x1ff:
+        if state[0] | state[1] == 0x1ff:
             return True
 
         return False
@@ -186,7 +185,7 @@ class Board(object):
             return {1: 1, 2: 0}
         if any(w & p2 == w for w in self.wins):
             return {1: 0, 2: 1}
-        if state[0] & state[1] == 0x1ff:
+        if state[0] | state[1] == 0x1ff:
             return {1: 0.5, 2: 0.5}
 
     def points_values(self, history):
@@ -202,7 +201,7 @@ class Board(object):
             return {1: 1, 2: -1}
         if any(w & p2 == w for w in self.wins):
             return {1: -1, 2: 1}
-        if state[0] & state[1] == 0x1ff:
+        if state[0] | state[1] == 0x1ff:
             return {1: 0, 2: 0}
 
     def winner_message(self, winners):
