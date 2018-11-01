@@ -19,9 +19,9 @@ If you have a Nvidia gpu, you should try to install the gpu version of tensorflo
     pip install tensorflow-gpu
 and all the related requirements, such as Cuda and CuDnn.
 
-## Submission
+## Uploads
 
-Before submitting a file, format the file by running
+Before uploading a file, format the file by running
 
     autopep8 --in-place filename.py
 ## Monte Carlo Tree Search
