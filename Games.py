@@ -41,9 +41,8 @@ class TicTacToe(Game):
             return True
 
     def legal_moves(self):
-        action_space = range(9)
         legal_moves = []
-        for action in action_space:
+        for action in self.action_space:
             if self.is_valid(action):
                 legal_moves.append(action)
         return np.array(legal_moves)
@@ -163,9 +162,8 @@ class ConnectFour(Game):
             return True
 
     def legal_moves(self):
-        action_space = range(7)
         legal_moves = []
-        for action in action_space:
+        for action in self.action_space:
             if self.is_valid(action):
                 legal_moves.append(action)
         return np.array(legal_moves)
