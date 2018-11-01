@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 
 
@@ -10,6 +11,15 @@ class Game:
         self.action_space = action_space
         self.obs_space = num_rows * num_cols * num_layers
         self.terminal = False
+
+    def layers(self):
+        layers = np.zeros((self.num_layers, self.num_rows, self.num_cols), dtype=np.uint8)
+        for k in range(0, self.num_layers):
+            for i in range(self.num_rows):
+                for j in range(self.num_cols):
+                    if self.board[i][j] == k:
+                        layers[k][i][j] = 1
+        return layers
 
     def restart(self):
         self.terminal = False
@@ -32,71 +42,78 @@ class TicTacToe(Game):
             return True
 
     def legal_moves(self):
-        NotImplemented() #FIXME: implement this
+        legal_moves = []
+        for action in self.action_space:
+            if self.is_valid(action):
+                legal_moves.append(action)
+        return np.array(legal_moves)
 
     def invert_board(self):
         for row in range(3):
             for col in range(3):
-                if(self.board[row][col] == 1):
+                if self.board[row][col] == 1:
                     self.board[row][col] = 2
-                elif(self.board[row][col] == 2):
+                elif self.board[row][col] == 2:
                     self.board[row][col] = 1
 
     def step(self, action):
         """
         PARAMS: a valid action (int 0 to 8)
         RETURN: reward (-1,0,1)
-         self.board    is updated in the process
+        self.board    is updated in the process
         self.terminal is updated in the process
         """
         # insert
         row_index = int(np.floor(action / 3))
         col_index = action % 3
         self.board[row_index][col_index] = 1
+
         # undecided
         terminal = 1
+
         # to check for 3 in a row horizontal
         for row in range(3):
             for col in range(3):
-                if(self.board[row][col] != 1):
+                if self.board[row][col] != 1:
                     terminal = 0
-            if(terminal == 1):
+            if terminal == 1:
                 self.terminal = True
                 return +1
             else:
                 terminal = 1
-         # to check for 3 in a row vertical
+
+        # to check for 3 in a row vertical
         for col in range(3):
             for row in range(3):
-                if(self.board[row][col] != 1):
+                if self.board[row][col] != 1:
                     terminal = 0
-            if(terminal == 1):
+            if terminal == 1:
                 self.terminal = True
                 return +1
             else:
                 terminal = 1
-         # diagonal top-left to bottom-right
+        # diagonal top-left to bottom-right
         for diag in range(3):
-            if(self.board[diag][diag] != 1):
+            if self.board[diag][diag] != 1:
                 terminal = 0
-        if(terminal == 1):
+        if terminal == 1:
             self.terminal = True
             return +1
         else:
             terminal = 1
-         # diagonal bottom-left to top-right
+        # diagonal bottom-left to top-right
         for diag in range(3):
-            if(self.board[2 - diag][diag] != 1):
+            if self.board[2 - diag][diag] != 1:
                 terminal = 0
-        if(terminal == 1):
+        if terminal == 1:
             self.terminal = True
             return +1
         else:
             terminal = 1
-         # checks if board is filled completely
+        # checks if board is filled completely
         for row in range(3):
             for col in range(3):
-                if(self.board[row][col] == 0):
+                if self.board[row][col] == 0:
                     terminal = 0
                     break
         if terminal == 1:
@@ -124,7 +141,7 @@ class ConnectFour(Game):
     def __init__(self):
         self.board = np.zeros((6, 7), dtype=np.uint8)
         self.terminal = False
-        action_space = np.arange(0, 42)
+        action_space = np.arange(0, 7)
         super().__init__(6, 7, 3, action_space)
 
     def restart(self):
@@ -132,20 +149,32 @@ class ConnectFour(Game):
         self.board = np.zeros((6, 7), dtype=np.uint8)
 
     def is_valid(self, action):
-        if self.board[int(np.floor(action / 7))][action % 7] != 0:
+        col_index = action  # action is in range 0 - 6
+
+        column = self.board[:, col_index]
+        i = 0
+        while i < len(column) and column[i] == 0:
+            i = i + 1
+        row_index = i - 1
+
+        if row_index < 0:
             return False
         else:
             return True
 
     def legal_moves(self):
-        NotImplemented() #FIXME: implement this
+        legal_moves = []
+        for action in self.action_space:
+            if self.is_valid(action):
+                legal_moves.append(action)
+        return np.array(legal_moves)
 
     def invert_board(self):
         for row in range(6):
             for col in range(7):
-                if(self.board[row][col] == 1):
+                if self.board[row][col] == 1:
                     self.board[row][col] = 2
-                elif(self.board[row][col] == 2):
+                elif self.board[row][col] == 2:
                     self.board[row][col] = 1
 
     def step(self, action):
@@ -157,8 +186,9 @@ class ConnectFour(Game):
         """
 
         # insert
-        row_index = int(np.floor(action / 7))
-        col_index = action % 7
+        col_index = action  # action is in range 0 - 6
+        row_index = (self.board[:, col_index] != 0).argmax(
+            axis=0) - 1  # subtract one from index of top filled space
         self.board[row_index][col_index] = 1
 
         # undecided
@@ -168,11 +198,11 @@ class ConnectFour(Game):
         for row in range(6):
             a = 0
             for col in range(7):
-                if(self.board[row][col] == 1):
-                    a = a+1
+                if self.board[row][col] == 1:
+                    a = a + 1
                 else:
                     a = 0
-                if(a == 4):
+                if a == 4:
                     self.terminal = True
                     return +1
 
@@ -180,11 +210,11 @@ class ConnectFour(Game):
         for col in range(7):
             a = 0
             for row in range(6):
-                if(self.board[row][col] == 1):
-                    a = a+1
+                if self.board[row][col] == 1:
+                    a = a + 1
                 else:
                     a = 0
-                if(a == 4):
+                if a == 4:
                     self.terminal = True
                     return +1
 
@@ -193,11 +223,11 @@ class ConnectFour(Game):
             a = 0
             row = 0
             while (row < 6) & (col < 7):
-                if(self.board[row][col] == 1):
+                if self.board[row][col] == 1:
                     a = a + 1
                 else:
                     a = 0
-                if(a == 4):
+                if a == 4:
                     self.terminal = True
                     return +1
 
@@ -208,11 +238,11 @@ class ConnectFour(Game):
             a = 0
             col = 0
             while (row < 6) & (col < 7):
-                if(self.board[row][col] == 1):
+                if self.board[row][col] == 1:
                     a = a + 1
                 else:
                     a = 0
-                if(a == 4):
+                if a == 4:
                     self.terminal = True
                     return +1
 
@@ -224,11 +254,11 @@ class ConnectFour(Game):
             a = 0
             row = 5
             while (row >= 0) & (col < 7):
-                if(self.board[row][col] == 1):
+                if self.board[row][col] == 1:
                     a = a + 1
                 else:
                     a = 0
-                if(a == 4):
+                if a == 4:
                     self.terminal = True
                     return +1
 
@@ -239,11 +269,11 @@ class ConnectFour(Game):
             a = 0
             col = 0
             while (row >= 0) & (col < 7):
-                if(self.board[row][col] == 1):
+                if self.board[row][col] == 1:
                     a = a + 1
                 else:
                     a = 0
-                if(a == 4):
+                if a == 4:
                     self.terminal = True
                     return +1
 
@@ -253,7 +283,7 @@ class ConnectFour(Game):
         # checks if board is filled completely
         for row in range(6):
             for col in range(7):
-                if(self.board[row][col] == 0):
+                if self.board[row][col] == 0:
                     terminal = 0
                     break
         if terminal == 1:

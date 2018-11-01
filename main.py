@@ -40,7 +40,8 @@ def manual_move():
             action = -1
     return action
 
-def simulation(n_episodes=100, opponent=random_move, render = True):
+
+def simulation(n_episodes=100, opponent=random_move, render=True):
     for i in range(n_episodes):
 
         # restart the game
@@ -71,6 +72,5 @@ def simulation(n_episodes=100, opponent=random_move, render = True):
 # test
 simulation()
 
-
 # manual testing
-simulation(n_episodes= 1, opponent = manual_move)
+simulation(n_episodes=1, opponent=manual_move)
