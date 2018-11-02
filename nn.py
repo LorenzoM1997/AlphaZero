@@ -4,19 +4,22 @@ import tensorflow as tf
 import numpy as np
 
 class NN():
-	""" 
-	Args:
-		lr (float): learning rate
-		board_dim (int np_arr of size 2): length and width of board
-		input_layers (int): number of input layers
-		hidden_layers (int): number of hidden residual layers
-	
-	"""
 	def __init__(self, lr, board_dim, input_layers, hidden_layers):
+		""" 
+		Args:
+			lr (float): learning rate
+			board_dim (int np_arr of size 2): length and width of board
+			input_layers (int): number of input layers
+			hidden_layers (int): number of hidden residual layers
+		"""
 		self.lr = lr
 		self.board_dim = board_dim
 		self.input_layers = input_layers
 		self.hidden_layers = hidden_layers
+		self.model = build_model
+
+	def build_model(self, lr, board_dim, input_layers, hidden_layers):
+		return None
 
 	def conv2d(inputs, filters, kernelsize, kernelsize, strides, padding, activation):
 		return tf.layers.Conv2D(
@@ -38,10 +41,6 @@ class NN():
 			scale=True, 
 			training=training, 
 			fused=True)
-
-	def conv2d():
-		# WILL DO NEXT
-		return None
 
 	def resBlock(inputs, filters, kernelsize, training, strides=1, padding="same"):
 		"""
