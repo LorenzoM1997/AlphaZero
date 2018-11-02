@@ -4,21 +4,31 @@ import tensorflow as tf
 import numpy as np
 
 class NN():
-	def __init__(self, lr, board_dim, input_layers, hidden_layers):
+	def __init__(self, lr, input_dim, num_hidden_layers):
 		""" 
 		Args:
 			lr (float): learning rate
-			board_dim (int np_arr of size 2): length and width of board
-			input_layers (int): number of input layers
-			hidden_layers (int): number of hidden residual layers
+			imput_dim (int list): length, height, layers of input
+			num_hidden_layers (int): number of hidden layers
 		"""
 		self.lr = lr
-		self.board_dim = board_dim
-		self.input_layers = input_layers
-		self.hidden_layers = hidden_layers
-		self.model = build_model
+		self.imput_dim = imput_dim
+		self.num_hidden_layers = num_hidden_layers
+		self.hidden_layers = _build_hidden_layers()
+		self.value_head = _build_value_head()
+		self.policcy_head = _build_policy_head()
 
-	def build_model(self, lr, board_dim, input_layers, hidden_layers):
+	def _build_hidden_layers(self, lr, board_dim, input_layers, hidden_layers):
+		"""
+		Returns:
+			List of resBlocks
+		"""
+		return None
+
+	def _build_value_head():
+		return None
+
+	def _build_policy_head():
 		return None
 
 	def conv2d(inputs, filters, kernelsize, kernelsize, strides, padding, activation):
