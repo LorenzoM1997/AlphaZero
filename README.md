@@ -35,9 +35,9 @@ The class MCT should be able to do the following
 
 ## Memory
 
-The episodes are saved with pickle, to open it you need to install it and import it
+The episodes are saved with pickle, to open it you need to import it
 
-    pip import pickle
+    import pickle
 
 The episodes for a game are saved in a file, which filename is the game name. You can know the exact name by looking at the variable name of the class Game() in Games.py. You can extract the data with:
 
