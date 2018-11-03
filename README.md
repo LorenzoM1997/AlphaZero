@@ -33,6 +33,22 @@ The class MCT should be able to do the following
 5. load the Monte Carlo tree
 6. be game-agnostic, so it gets the information from a generic Game object
 
+## Memory
+
+The episodes are saved with pickle, to open it you need to install it and import it
+
+    pip import pickle
+
+The episodes for a game are saved in a file, which filename is the game name. You can know the exact name by looking at the variable name of the class Game() in Games.py. You can extract the data with:
+
+    data = pickle.load(open(filename, "rb"))
+    
+The file contains a list of lists.
+Each entry in the list is therefore a list with 3 elements
+1. A representation of the board
+2. The action performed
+3. The reward associated to the game for that particular player.
+
 ## Game implementation
 There are currently two games available
 1. TicTacToe()
@@ -40,17 +56,20 @@ There are currently two games available
 
 The following methods need to be implemented for each game:
 
-    restart()
-    is_valid(action)
-        # returns a boolean
     invert_board()
-    step(action)
-        # returns reward
+    is_valid(action): returns a boolean
+    layers(): returns a np.ndarray with one-hot encoded info
+    legal moves() : returns a list
     render()
+    restart()
+    step(action): returns reward
+    
 The games should also have variables such as
 
     action_space
-    observation_space
-    num_rows
+    name
     num_cols
     num_layers
+    num_rows
+    observation_space
+    terminal
