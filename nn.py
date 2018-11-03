@@ -4,34 +4,48 @@ import tensorflow as tf
 import numpy as np
 
 class NN():
-	def __init__(self, lr, input_dim, num_hidden_layers):
+	def __init__(self, lr, input_dim, num_hidden_layers, filters, kernelsize, strides=1, padding="same"):
 		""" 
 		Args:
 			lr (float): learning rate
-			imput_dim (int list): length, height, layers of input
+			input_dim (int list): length, height, layers of input
 			num_hidden_layers (int): number of hidden layers
 		"""
 		self.lr = lr
-		self.imput_dim = imput_dim
+		self.input_dim = input_dim
 		self.num_hidden_layers = num_hidden_layers
+		self.filters = filters
+		self.kernelsize = kernelsize
+		self.strides = strides
+		self.padding = padding
+
+		self.inputs = tf.placeholder(shape=input_dim,dtype=tf.float32)
 		self.hidden_layers = _build_hidden_layers()
 		self.value_head = _build_value_head()
-		self.policcy_head = _build_policy_head()
+		self.policy_head = _build_policy_head()
 
-	def _build_hidden_layers(self, lr, board_dim, input_layers, hidden_layers):
+	def _build_hidden_layers(self):
 		"""
 		Returns:
 			List of resBlocks
 		"""
-		return None
+		hidden_layers = []
+		resblk = resBlock(self.inputs, self.filters, self.kernelsize, self.strides, self.padding, True)
+		hidden_layers.append(resblk)
+		if num_hidden_layers > 1:
+			for i in range(num_hidden_layers-1):
+				resblk = resBlock(resblk, self.filters, self.kernelsize, self.strides, self.padding, True)
+				hidden_layers.append(resblk)
+		return hidden_layers
 
 	def _build_value_head():
+		#value_head = conv2d(self.hidden_layers[-1], self.kernelsize,)
 		return None
 
 	def _build_policy_head():
 		return None
 
-	def conv2d(inputs, filters, kernelsize, kernelsize, strides, padding, activation):
+	def conv2d(inputs, filters, kernelsize, strides, padding, activation):
 		return tf.layers.Conv2D(
 			inputs = inputs,
 			filters = filters, 
