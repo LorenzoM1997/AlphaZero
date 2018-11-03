@@ -4,16 +4,35 @@ import numpy as np
 
 class Game:
 
-    def __init__(self, num_rows, num_cols, num_layers, action_space):
+    def __init__(self, num_rows, num_cols, num_layers,
+                 action_space, name='undefined'):
+        """
+        Args:
+            num_rows(int): number of rows
+            num_cols(int): number of columns
+            num_layers(int): number of layers in the layer representation of the board
+            action_space(list of integers): all the possible moves
+            name(string - optional)
+        """
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.num_layers = num_layers
         self.action_space = action_space
         self.obs_space = num_rows * num_cols * num_layers
         self.terminal = False
+        self.name = name
 
     def layers(self):
-        layers = np.zeros((self.num_layers, self.num_rows, self.num_cols), dtype=np.uint8)
+        """
+        Converts the board into the layers representation
+        Useful for the neural network
+
+        returns:
+            layers(np.ndarray): a matrix with one-hot encoded positions
+
+        """
+        layers = np.zeros((self.num_layers, self.num_rows,
+                           self.num_cols), dtype=np.uint8)
         for k in range(0, self.num_layers):
             for i in range(self.num_rows):
                 for j in range(self.num_cols):
@@ -29,24 +48,34 @@ class TicTacToe(Game):
     def __init__(self):
         self.board = np.zeros((3, 3), dtype=np.uint8)
         action_space = np.arange(0, 9)
-        super().__init__(3, 3, 3, action_space)
+        super().__init__(3, 3, 3, action_space, 'TicTacToe')
 
     def restart(self):
         super().restart()
         self.board = np.zeros((3, 3), dtype=np.uint8)
 
     def is_valid(self, action):
+        """
+        Checks if an action is valid
+
+        Args:
+            action(int)
+        """
         if self.board[int(np.floor(action / 3))][action % 3] != 0:
             return False
         else:
             return True
 
     def legal_moves(self):
+        """
+        return:
+            legal_moves(list): a list with all the legal moves from the current position
+        """
         legal_moves = []
         for action in self.action_space:
             if self.is_valid(action):
                 legal_moves.append(action)
-        return np.array(legal_moves)
+        return legal_moves
 
     def invert_board(self):
         for row in range(3):
@@ -58,7 +87,8 @@ class TicTacToe(Game):
 
     def step(self, action):
         """
-        PARAMS: a valid action (int 0 to 8)
+        Args:
+            action(int): a valid action
         RETURN: reward (-1,0,1)
         self.board    is updated in the process
         self.terminal is updated in the process
@@ -142,7 +172,7 @@ class ConnectFour(Game):
         self.board = np.zeros((6, 7), dtype=np.uint8)
         self.terminal = False
         action_space = np.arange(0, 7)
-        super().__init__(6, 7, 3, action_space)
+        super().__init__(6, 7, 3, action_space, 'ConnectFour')
 
     def restart(self):
         super().restart()
@@ -179,8 +209,11 @@ class ConnectFour(Game):
 
     def step(self, action):
         """
-        PARAMS: a valid action (int 0 to 41)
-        RETURN: reward (-1,0,1)
+        Args:
+            action(int): a valid action
+        Returns:
+            reward(int) a integer which is either -1,0, or 1
+
         self.board    is updated in the process
         self.terminal is updated in the process
         """

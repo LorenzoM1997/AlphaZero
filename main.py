@@ -1,8 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import random
+import pickle
 from Games import *
 from MCTS import *
+from nn import *
 
 game = TicTacToe()
 action_space = game.action_space
@@ -41,11 +43,16 @@ def manual_move():
     return action
 
 
-def simulation(n_episodes=100, opponent=random_move, render=True):
+def simulation(n_episodes=100, opponent=random_move, render=True, save_episodes=False):
+
+    if save_episodes:
+        memory = []
+
     for i in range(n_episodes):
 
         # restart the game
         game.restart()
+        episode = []
         player = i % 2
 
         while not game.terminal:
@@ -59,18 +66,32 @@ def simulation(n_episodes=100, opponent=random_move, render=True):
                 action = epsilon_greedy(random_move)
             else:
                 action = opponent()
+
+            if save_episodes:
+                tuple = [game.board, action, 0]
+                episode.append(tuple)
             reward = game.step(action)
 
             # now will be the turn of the other player
             game.invert_board()
             player = (player + 1) % 2
 
+        if save_episodes:
+            for i in range(len(episode)):
+                episode[len(episode)-i-1][2] = reward
+                reward = reward * (-1)
+            memory.append(episode)
+
+    if save_episodes:
+        pickle.dump(memory, open(game.name, "wb"))
+        return memory
 
 # uncomment this when MCTS ready
 # mct = MCT(game)
 
+
 # test
-simulation()
+simulation(10, render=False, save_episodes=True)
 
 # manual testing
 simulation(n_episodes=1, opponent=manual_move)

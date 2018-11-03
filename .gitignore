@@ -4,3 +4,4 @@
 *.sln
 *.pyc
 **/venv
+TicTacToe
