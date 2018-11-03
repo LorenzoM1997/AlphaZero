@@ -52,7 +52,7 @@ class NN():
 		vh_flat = tf.layers.flatten(vh_bn_relu)
 		vh_dense = tf.layers.dense(
 			inputs=vh_flat,
-			units=20,
+			units=20, # Arbitrary number. Consider decreasing for connect4.
 			use_bias=False,
 			activation=tf.nn.leaky_relu
 		)
