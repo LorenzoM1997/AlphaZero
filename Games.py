@@ -4,16 +4,18 @@ import numpy as np
 
 class Game:
 
-    def __init__(self, num_rows, num_cols, num_layers, action_space):
+    def __init__(self, num_rows, num_cols, num_layers, action_space, name='undefined'):
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.num_layers = num_layers
         self.action_space = action_space
         self.obs_space = num_rows * num_cols * num_layers
         self.terminal = False
+        self.name = name
 
     def layers(self):
-        layers = np.zeros((self.num_layers, self.num_rows, self.num_cols), dtype=np.uint8)
+        layers = np.zeros((self.num_layers, self.num_rows,
+                           self.num_cols), dtype=np.uint8)
         for k in range(0, self.num_layers):
             for i in range(self.num_rows):
                 for j in range(self.num_cols):
@@ -29,7 +31,7 @@ class TicTacToe(Game):
     def __init__(self):
         self.board = np.zeros((3, 3), dtype=np.uint8)
         action_space = np.arange(0, 9)
-        super().__init__(3, 3, 3, action_space)
+        super().__init__(3, 3, 3, action_space, 'TicTacToe')
 
     def restart(self):
         super().restart()
@@ -142,7 +144,7 @@ class ConnectFour(Game):
         self.board = np.zeros((6, 7), dtype=np.uint8)
         self.terminal = False
         action_space = np.arange(0, 7)
-        super().__init__(6, 7, 3, action_space)
+        super().__init__(6, 7, 3, action_space, 'ConnectFour')
 
     def restart(self):
         super().restart()
