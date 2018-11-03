@@ -12,11 +12,11 @@ class NN():
 			num_hidden_layers (int): number of hidden layers
 		"""
 		self.lr = lr
-		self.imput_dim = imput_dim
+		self.input_dim = input_dim
 		self.num_hidden_layers = num_hidden_layers
 		self.hidden_layers = _build_hidden_layers()
 		self.value_head = _build_value_head()
-		self.policcy_head = _build_policy_head()
+		self.policy_head = _build_policy_head()
 
 	def _build_hidden_layers(self, lr, board_dim, input_layers, hidden_layers):
 		"""
