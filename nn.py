@@ -6,7 +6,7 @@ import numpy as np
 
 class NN():
 	def __init__(self, lr, input_dim, num_hidden_layers, value_head_dim, policy_head_dim, filters, kernelsize, training, strides=1, padding="same"):
-		""" 
+		"""
 		Args:
 			lr (float): Learning rate
 			input_dim (int tuple/list): Length, height, layers of input
@@ -26,7 +26,8 @@ class NN():
 		self.padding = padding
 		self.training = training
 
-		self.inputs = tf.placeholder(shape=np.append(None,input_dim),dtype=tf.float32) # Variable batch size
+		self.inputs = tf.placeholder(shape=np.append(
+		    None, input_dim), dtype=tf.float32)  # Variable batch size
 		self.hidden_layers = _build_hidden_layers()
 		self.value_head = _build_value_head()
 		self.policy_head = _build_policy_head()
@@ -37,22 +38,24 @@ class NN():
 			List of resBlocks
 		"""
 		hidden_layers = []
-		resblk = resBlock(self.inputs, self.filters, self.kernelsize, True, self.strides, self.padding)
+		resblk = resBlock(self.inputs, self.filters, self.kernelsize,
+		                  True, self.strides, self.padding)
 		hidden_layers.append(resblk)
 		if num_hidden_layers > 1:
 			for i in range(num_hidden_layers-1):
-				resblk = resBlock(resblk, self.filters, self.kernelsize, True, self.strides, self.padding)
+				resblk = resBlock(resblk, self.filters, self.kernelsize,
+				                  True, self.strides, self.padding)
 				hidden_layers.append(resblk)
 		return hidden_layers
 
 	def _build_value_head(self):
-		vh = conv2d(self.hidden_layers[-1], (1,1), 1, "same", None)
+		vh = conv2d(self.hidden_layers[-1], (1, 1), 1, "same", None)
 		vh_bn = batch_norm(vh, self.training)
 		vh_bn_relu = tf.nn.relu(vh_bn)
 		vh_flat = tf.layers.flatten(vh_bn_relu)
 		vh_dense = tf.layers.dense(
 			inputs=vh_flat,
-			units=20, # Arbitrary number. Consider decreasing for connect4.
+			units=20,  # Arbitrary number. Consider decreasing for connect4.
 			use_bias=False,
 			activation=tf.nn.leaky_relu
 		)
