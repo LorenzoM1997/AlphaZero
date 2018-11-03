@@ -2,12 +2,16 @@
 
 import tensorflow as tf
 import numpy as np
+import math
 
 
 class NN():
-	def __init__(self, lr, input_dim, num_hidden_layers, value_head_dim, policy_head_dim, filters, kernelsize, training, strides=1, padding="same"):
-		"""
+	def __init__(self, X, value, policy, lr, input_dim, num_hidden_layers, value_head_dim, policy_head_dim, filters, kernelsize, training, strides=1, padding="same", batch_size = 128):
+		""" 
 		Args:
+			X: Input data, dim = [n obs, Length, height, layers of input]
+			value: Response variable of value
+			policy: Response variable of value
 			lr (float): Learning rate
 			input_dim (int tuple/list): Length, height, layers of input
 			num_hidden_layers (int): Number of hidden layers
@@ -16,6 +20,7 @@ class NN():
 			training (bool): True if model is training
 			strides (int tuple/list or int): Stride of convolution
 			padding ("same" or "valid"): "same" if 0 adding added during convolution
+			batch_size (int): Default 128, batch size in one training step
 		"""
 		self.lr = lr
 		self.input_dim = input_dim
@@ -25,12 +30,18 @@ class NN():
 		self.strides = strides
 		self.padding = padding
 		self.training = training
+		self.batch_size = batch_size
 
-		self.inputs = tf.placeholder(shape=np.append(
-		    None, input_dim), dtype=tf.float32)  # Variable batch size
+		self.inputs = tf.placeholder(shape=np.append(None,input_dim),dtype=tf.float32) # Variable batch size
+		self.policy_label = tf.placeholder(shape=np.append(None,policy.shape), dtype=tf.float32)
+		self.value_label = tf.placeholder(tf.float32, [None, 1])
+
 		self.hidden_layers = _build_hidden_layers()
 		self.value_head = _build_value_head()
 		self.policy_head = _build_policy_head()
+		self.ce_loss = _cross_entropy_with_logits()
+		self.mse_loss = _mean_sq_error()
+		self.train_times = math.ceil(X.shape[0]/batch_size)
 
 	def _build_hidden_layers(self):
 		"""
@@ -69,9 +80,9 @@ class NN():
 		return vh_out
 
     def _build_policy_head():
-        return None
+		return None
 
-    def conv2d(inputs, filters, kernelsize, strides, padding, activation):
+	def conv2d(inputs, filters, kernelsize, strides, padding, activation):
         return tf.layers.Conv2D(
             inputs=inputs,
             filters=filters,
@@ -113,3 +124,51 @@ class NN():
         y = conv2_bn + shortcut
         y_relu = tf.nn.relu(y)
         return y
+
+	def _cross_entropy_with_logits(self):
+		loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.policy_head, labels=self.policy_label)
+		return tf.reduce_mean(loss)
+
+	def _mean_sq_error(self):
+		return tf.losses.mean_squared_error(self.value_label, self.value_head)
+
+	def getBatch(self, train_times, batch_size, trainLabels):
+		"""
+		trainlables: value or policy
+		"""
+		sample_size = self.X.shape[0]
+		startIndex = (train_times * batch_size) % sample_size
+		endIndex = startIndex + batch_size % sample_size
+		if startIndex < endIndex:
+			batch_X = self.X[startIndex : endIndex]
+			batch_Y = trainLabels[startIndex : endIndex]
+		else:
+			batch_X_1 = self.X[startIndex:]
+			batch_X_2 = self.X[:endIndex]
+			batch_X = np.concatenate((batch_X_1, batch_X_2), axis=0)
+			batch_Y_1 = trainLabels[startIndex:]
+			batch_Y_2 = trainLabels[:endIndex]
+			batch_Y = np.concatenate((batch_Y_1, batch_Y_2), axis=0)
+		return batch_X, batch_Y
+
+	def fit(self, trainLabels, batch_size):
+		init = tf.global_variables_initializer()
+
+		if trainLabels == 'value':
+			loss = self.mse_loss
+			train_labels = self.value
+		if trainlables == 'policy':
+			loss = self.ce_loss
+			train_labels = self.policy
+		train_step = tf.train.AdamOptimizer(lr).minimize(loss)
+
+		with tf.Session() as sess:
+			sess.run(init)
+			for step in range(self.train_times):
+			    [batch_X, batch_Y] = getBatch(step, self.train_times, self.batch_size, train_labels)
+			    train_step.run(feed_dict={X:batch_X, Y:batch_Y, mode_is_train:True})
+
+		return None
+
+
+
