@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-	def __init__(self, lr, input_dim, num_hidden_layers, value_head_dim, policy_head_dim, filters, kernelsize, training, strides=1, padding="same", batch_size = 128):
+	def __init__(self, lr, input_dim, num_hidden_layers, value_head_dim, policy_head_dim, filters, kernelsize, training, strides=1, padding="same", batch_size = 128, train_steps = 500):
 		""" 
 		Args:
 			lr (float): Learning rate
@@ -18,6 +18,7 @@ class NN():
 			strides (int tuple/list or int): Stride of convolution
 			padding ("same" or "valid"): "same" if 0 adding added during convolution
 			batch_size (int): Default 128, batch size in one training step
+			train_steps (int): Default = 500, training iterations
 		"""
 		self.lr = lr
 		self.input_dim = input_dim
@@ -37,7 +38,7 @@ class NN():
 		self.policy_head = _build_policy_head()
 		self.ce_loss = _cross_entropy_with_logits()
 		self.mse_loss = _mean_sq_error()
-		self.train_times = math.ceil(X.shape[0]/batch_size)
+		self.train_steps = train_steps
 
 	def _build_hidden_layers(self):
 		"""
@@ -73,7 +74,7 @@ class NN():
 
 		return vh_out
 
-    def _build_policy_head():
+	def _build_policy_head():
 		return None
 
 	def conv2d(inputs, filters, kernelsize, strides, padding, activation):
@@ -97,9 +98,8 @@ class NN():
 			training=training, 
 			fused=True)
 
-    def resBlock(inputs, filters, kernelsize,
-                 training, strides=1, padding="same"):
-        """
+    def resBlock(inputs, filters, kernelsize, training, strides=1, padding="same"):
+    	"""
         Args:
                 inputs (tensor): Tensor input
                 filter (int): Number of channels in the output
@@ -108,7 +108,7 @@ class NN():
                 padding (int): "valid" or "same"
                 training (bool): True if training
         """
-        shortcut = tf.identity(inputs)
+		shortcut = tf.identity(inputs)
         conv1 = conv2d(inputs, filters, kernelsize, strides, padding, None)
         conv1_bn = batch_norm(conv1, training)
         conv1_bn_relu = tf.nn.relu(conv1_bn)
@@ -126,12 +126,12 @@ class NN():
 	def _mean_sq_error(self):
 		return tf.losses.mean_squared_error(self.value_label, self.value_head)
 
-	def getBatch(self, X, train_times, batch_size, trainLabels):
+	def getBatch(self, X, train_steps, batch_size, trainLabels):
 		"""
 		trainlables: value or policy
 		"""
 		sample_size = X.shape[0]
-		startIndex = (train_times * batch_size) % sample_size
+		startIndex = (train_steps * batch_size) % sample_size
 		endIndex = startIndex + batch_size % sample_size
 		if startIndex < endIndex:
 			batch_X = X[startIndex : endIndex]
@@ -159,8 +159,8 @@ class NN():
 
 		with tf.Session() as sess:
 			sess.run(init)
-			for step in range(self.train_times):
-			    [batch_X, batch_Y] = getBatch(step, X, self.train_times, self.batch_size, train_labels)
+			for step in range(self.train_steps):
+			    [batch_X, batch_Y] = getBatch(X, step, self.batch_size, train_labels)
 			    train_step.run(feed_dict={X:batch_X, Y:batch_Y})
 
 		return None
