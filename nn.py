@@ -161,7 +161,7 @@ class NN():
 			sess.run(init)
 			for step in range(self.train_times):
 			    [batch_X, batch_Y] = getBatch(step, X, self.train_times, self.batch_size, train_labels)
-			    train_step.run(feed_dict={X:batch_X, Y:batch_Y, mode_is_train:True})
+			    train_step.run(feed_dict={X:batch_X, Y:batch_Y})
 
 		return None
 
