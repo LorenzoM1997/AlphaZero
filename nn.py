@@ -145,7 +145,7 @@ class NN():
 			batch_Y = np.concatenate((batch_Y_1, batch_Y_2), axis=0)
 		return batch_X, batch_Y
 
-	def fit(self, X, value, policy, trainLabels, batch_size):
+	def fit(self, X, value, policy, trainLabels, batch_size, opimizer = 'AdamOptimizer'):
 		init = tf.global_variables_initializer()
 
 
@@ -155,7 +155,11 @@ class NN():
 		if trainlables == 'policy':
 			loss = self.ce_loss
 			train_labels = policy
-		train_step = tf.train.AdamOptimizer(lr).minimize(loss)
+
+		if optimizer = 'AdamOptimizer':
+			train_step = tf.train.AdamOptimizer(lr).minimize(loss)
+		if optimizer = 'GradientDescentOptimizer':
+			train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
 
 		with tf.Session() as sess:
 			sess.run(init)
