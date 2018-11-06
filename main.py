@@ -4,9 +4,12 @@ import random
 import pickle
 from Games import *
 from MCTS import *
+from GameGlue import GameGlue
+import uct
 
-game = TicTacToe()
+game = GameGlue(TicTacToe())
 action_space = game.action_space
+ai = uct.UCTValues(game)
 
 
 def random_move():
@@ -66,7 +69,9 @@ def simulation(n_episodes=100, opponent=random_move,
             # collect observations
             if player:
                 # FIXME: should choose the best choice through the MCTS
-                action = epsilon_greedy(random_move)
+                ai.update(game.state)
+                action = ai.get_action()
+
             else:
                 action = opponent()
 
@@ -108,7 +113,7 @@ def elo_rating(elo_opponent=0, episodes=100, opponent=random_move):
 # uncomment this when MCTS ready
 # mct = MCT(game)
 # test
-simulation(10, render=False, save_episodes=True)
+simulation(10, render=True, opponent=manual_move, save_episodes=True)
 
 print("elo rating against random: ", elo_rating())
 
