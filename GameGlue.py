@@ -89,6 +89,7 @@ class GameGlue:
         game_copy = deepcopy(self)
         game_copy.state = state
         game_copy.step(action)
+        game_copy.invert_board()
         return game_copy.state
 
     def is_legal(self, history, action):
@@ -124,11 +125,11 @@ class GameGlue:
             return
 
         if game_copy.last_state == -1:
-            return {1: 1, 2: 0}
+            return {1: 1, 2: -1}
         elif game_copy.last_state == 0:
-            return {1: 0.5, 2: 0.5}
+            return {1: 0, 2: 0}
         else:
-            return {1: 0, 2: 1}
+            return {1: -1, 2: 1}
 
     def points_values(self, history):
         game_copy = deepcopy(self)
