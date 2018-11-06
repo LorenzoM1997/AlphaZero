@@ -87,7 +87,7 @@ class UCT(object):
         # variable lookup instead of an attribute access each loop.
         stats = self.stats
 
-        visited_states = set()
+        visited_states = []
         history_copy = self.history[:]
         state = history_copy[-1]
         player = self.board.current_player(state)
@@ -120,7 +120,7 @@ class UCT(object):
                 if t > self.max_depth:
                     self.max_depth = t
 
-            visited_states.add((player, state))
+            visited_states.append((player, state))
 
             player = self.board.current_player(state)
             if self.board.is_ended(history_copy):
@@ -128,12 +128,15 @@ class UCT(object):
 
         # Back-propagation
         end_values = self.end_values(history_copy)
-        for player, state in visited_states:
+        multiplier = -1
+        for i in range(len(visited_states)):
+            multiplier *= -1
+            player, state = visited_states[len(visited_states) - 1 - i]
             if (player, state) not in stats:
                 continue
             S = stats[(player, state)]
             S.visits += 1
-            S.value += end_values[player]
+            S.value += end_values[player] * multiplier
 
 
 class UCTWins(UCT):
