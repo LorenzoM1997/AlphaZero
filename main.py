@@ -3,7 +3,6 @@ import numpy as np
 import random
 import pickle
 from Games import *
-from MCTS import *
 from GameGlue import GameGlue
 import uct
 
@@ -110,8 +109,6 @@ def elo_rating(elo_opponent=0, episodes=100, opponent=random_move):
     return elo
 
 
-# uncomment this when MCTS ready
-# mct = MCT(game)
 # test
 simulation(10, render=True, opponent=manual_move, save_episodes=True)
 
