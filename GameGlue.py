@@ -19,7 +19,6 @@ class GameGlue:
     def __init__(self, game):
         self.game = game
         self.last_state = None
-        self.player = 1
         self.ended = 0 
 
     @property
@@ -29,10 +28,9 @@ class GameGlue:
     @state.setter
     def state(self, state):
         self.last_state = state[0]
-        self.player = state[1]
-        self.ended = state[2]
+        self.ended = state[1]
         board = []
-        for i in state[3]:
+        for i in state[2]:
             board.append(np.array(i, dtype=np.uint8))
         self.game.board = np.array(board, dtype=np.uint8)
 
@@ -41,12 +39,11 @@ class GameGlue:
         board = (),
         for i in self.game.board:
             board = board + (tuple(i),)
-        return (self.last_state, self.player, self.ended, board[1:])
+        return (self.last_state, self.ended, board[1:])
 
     def restart(self):
         self.game.restart()
         self.last_state = None
-        self.player = 1
         self.ended = 0
 
     def is_valid(self, action):
@@ -60,20 +57,13 @@ class GameGlue:
 
     def step(self, action):
         self.last_state = self.game.step(action)
-        self.player = 3 - self.player
         self.ended = self.game.terminal
         return self.last_state
-
     def render(self):
         self.game.render()
 
     def starting_state(self):
         return self.__class__(self.game.__class__()).state
-
-    def display(self, state, action):
-        game_copy = deepcopy(self)
-        game_copy.state = state
-        game.render()
 
     def pack_state(self, data):
         self.state = data
@@ -81,9 +71,6 @@ class GameGlue:
 
     def unpack_state(self, state):
         return self.state
-
-    def unpack_action(self, action):
-        return action
 
     def next_state(self, state, action):
         game_copy = deepcopy(self)
@@ -102,16 +89,6 @@ class GameGlue:
         game_copy.state = history[-1]
         return game_copy.legal_moves()
 
-    def current_player(self, state):
-        game_copy = deepcopy(self)
-        game_copy.state = state
-        return game_copy.player
-
-    def previous_player(self, state):
-        game_copy = deepcopy(self)
-        game_copy.state = state
-        return 3 - game_copy.player
-
     def is_ended(self, history):
         game_copy = deepcopy(self)
         game_copy.state = history[-1]
@@ -124,26 +101,10 @@ class GameGlue:
         if not game_copy.ended:
             return
 
-        if game_copy.last_state == -1:
-            return {1: 1, 2: -1}
+        if game_copy.last_state == 1:
+            return 1
         elif game_copy.last_state == 0:
-            return {1: 0, 2: 0}
+            return 0
         else:
-            return {1: -1, 2: 1}
+            return -1
 
-    def points_values(self, history):
-        game_copy = deepcopy(self)
-        game_copy.state = history[-1]
-
-        if not game_copy.ended:
-            return
-
-        if game_copy.last_state == -1:
-            return {1: 1, 2: -1}
-        elif game_copy.last_state == 0:
-            return {1: 0, 2: 0}
-        else:
-            return {1: -1, 2: 1}
-
-    def winner_message(self, winners):
-        return 'winner'
