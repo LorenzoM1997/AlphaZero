@@ -4,12 +4,11 @@ import random
 import pickle
 from Games import *
 from GameGlue import GameGlue
+from functools import partial
 import uct
 
 game = GameGlue(TicTacToe())
-action_space = game.action_space
 ai = uct.UCTValues(game)
-
 
 def random_move():
     global game
@@ -43,6 +42,10 @@ def manual_move():
             action = -1
     return action
 
+def ai_move(ai):
+    global game
+    ai.update(game.state)
+    return ai.get_action()
 
 def simulation(n_episodes=100, opponent=random_move,
                render=True, save_episodes=False, evaluation=False):
@@ -109,10 +112,11 @@ def elo_rating(elo_opponent=0, episodes=100, opponent=random_move):
     return elo
 
 
-# test
-simulation(10, render=True, opponent=manual_move, save_episodes=True)
+# UNCOMMENT THIS for testing manually
+# simulation(10, render=True, opponent=manual_move, save_episodes=True)
 
-print("elo rating against random: ", elo_rating())
+# UNCOMMENT THIS for testing the ELO rating
+# print("ELO rating against random: ", elo_rating(episodes = 10))
 
-# manual testing
-simulation(n_episodes=1, opponent=manual_move)
+print("Saving dataset")
+memory = simulation(200, partial(ai_move, ai), render= False, save_episodes = True)
