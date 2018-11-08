@@ -21,6 +21,7 @@ class UCT(object):
 
         self.max_depth = 0
         self.data = {}
+        self.DEBUG = False
 
         self.calculation_time = float(kwargs.get('time', 5))
         self.max_actions = int(kwargs.get('max_actions', 1000))
@@ -59,13 +60,15 @@ class UCT(object):
         # time elapsed.
         self.data.update(games=games, max_depth=self.max_depth,
                          time=str(time.time() - begin))
-        print(self.data['games'], self.data['time'])
-        print("Maximum depth searched:", self.max_depth)
+        if self.DEBUG:
+            print(self.data['games'], self.data['time'])
+            print("Maximum depth searched:", self.max_depth)
 
         # Store and display the stats for each possible action.
         self.data['actions'] = self.calculate_action_values(state, legal)
-        for m in self.data['actions']:
-            print(self.action_template.format(**m))
+        if self.DEBUG:
+            for m in self.data['actions']:
+                print(self.action_template.format(**m))
 
         # Pick the action with the highest average value.
         return self.data['actions'][0]['action']
@@ -102,8 +105,6 @@ class UCT(object):
 
             history_copy.append(state)
 
-            # `player` here and below refers to the player
-            # who moved into that particular state.
             if expand and state not in stats:
                 expand = False
                 stats[state] = Stat()
