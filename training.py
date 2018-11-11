@@ -1,19 +1,20 @@
 import pickle
-import tensorflow
+import tensorflow as tf
 from nn import *
 from Games import *
+from nn import NN
 
 def load_data_for_training(game):
 
     try:
-        data = pickle.load(open(game.name, "rb")) #load the data from file
+        data = pickle.load(open(game.name, "rb"))  # load the data from file
     except:
         print("Data not found.")
         return False
 
-    X = [] # where input (board state) will be saved
-    V = [] # where the value (one of labels) will be saved
-    P = [] # where the policy (one of the labels) will be saved
+    X = []  # where input (board state) will be saved
+    V = []  # where the value (one of labels) will be saved
+    P = []  # where the policy (one of the labels) will be saved
 
     for episode in data:
         for step in episode:
@@ -27,7 +28,10 @@ def load_data_for_training(game):
     print("Episodes in data_set:", len(data))
     return True
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     # IMPORTANT game definition
     game = TicTacToe()
     load_data_for_training(game)
+    input_shape = game.layers().shape
+    nnet = NN(input_shape, 5, game.action_space, True )
