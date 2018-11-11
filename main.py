@@ -1,10 +1,13 @@
-import tensorflow as tf
-import numpy as np
-import random
-import pickle
+from functools import partial
 from Games import *
 from GameGlue import GameGlue
-from functools import partial
+import multiprocessing
+import numpy as np
+import pickle
+import random
+import tensorflow as tf
+from time import sleep
+from training import load_data_for_training
 import uct
 
 game = GameGlue(TicTacToe())
@@ -49,6 +52,8 @@ def ai_move(ai):
 
 def simulation(n_episodes=100, opponent=random_move,
                render=True, save_episodes=False, evaluation=False):
+
+    global game
 
     if save_episodes:
         memory = []
@@ -118,5 +123,32 @@ def elo_rating(elo_opponent=0, episodes=100, opponent=random_move):
 # UNCOMMENT THIS for testing the ELO rating
 # print("ELO rating against random: ", elo_rating(episodes = 10))
 
-print("Saving dataset")
-memory = simulation(200, partial(ai_move, ai), render= False, save_episodes = True)
+if __name__ == "__main__":  
+
+    render_game = True
+    save_episodes = False
+
+    # Define IPC manager
+    manager = multiprocessing.Manager()
+
+    # Define a list (queue) for tasks and computation results
+    tasks = manager.Queue()
+    results = manager.Queue()
+
+    # Create process pool with two processes
+    num_simulations = 3
+    num_processes = 1 + num_simulations
+    pool = multiprocessing.Pool(processes=num_processes)  
+    processes = []
+
+    for i in range(num_simulations):
+        # Initiate the worker processes for simulation
+        new_process = multiprocessing.Process(target=simulation, args = (200, partial(ai_move, ai), render_game, save_episodes,))
+        processes.append(new_process)
+        new_process.start()
+
+    # Set process for training the network
+    new_process = multiprocessing.Process(target=load_data_for_training, args=(TicTacToe(),))
+    processes.append(new_process)
+    new_process.start()
+
