@@ -10,7 +10,8 @@ from time import sleep
 from training import load_data_for_training
 import uct
 
-game = GameGlue(TicTacToe())
+game_interface = ConnectFour()
+game = GameGlue(game_interface)
 ai = uct.UCTValues(game)
 
 def random_move():
@@ -136,7 +137,7 @@ if __name__ == "__main__":
     results = manager.Queue()
 
     # Create process pool with two processes
-    num_simulations = 3
+    num_simulations = 1
     num_processes = 1 + num_simulations
     pool = multiprocessing.Pool(processes=num_processes)  
     processes = []
@@ -148,7 +149,7 @@ if __name__ == "__main__":
         new_process.start()
 
     # Set process for training the network
-    new_process = multiprocessing.Process(target=load_data_for_training, args=(TicTacToe(),))
+    new_process = multiprocessing.Process(target=load_data_for_training, args=(game_interface,))
     processes.append(new_process)
     new_process.start()
 

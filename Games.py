@@ -197,7 +197,7 @@ class ConnectFour(Game):
         for action in self.action_space:
             if self.is_valid(action):
                 legal_moves.append(action)
-        return np.array(legal_moves)
+        return legal_moves
 
     def invert_board(self):
         for row in range(6):
