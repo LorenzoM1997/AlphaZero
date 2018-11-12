@@ -1,5 +1,8 @@
 from functools import partial
-from Games import *
+import Games
+from Games.TicTacToe import TicTacToe
+from Games.ConnectFour import ConnectFour
+
 from GameGlue import GameGlue
 import multiprocessing
 import numpy as np
@@ -10,7 +13,7 @@ from time import sleep, strftime, gmtime
 from training import load_data_for_training
 import uct
 
-game_interface = TicTacToe()
+game_interface = ConnectFour()
 game = GameGlue(game_interface)
 ai = uct.UCTValues(game)
 

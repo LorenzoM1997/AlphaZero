@@ -1,7 +1,7 @@
 import pickle
 import tensorflow as tf
 from nn import *
-from Games import *
+from Games.Games import *
 from nn import NN
 
 def load_data_for_training(game):
@@ -27,7 +27,6 @@ def load_data_for_training(game):
     print("Correctly loaded data set")
     print("Episodes in data_set:", len(data))
     return [X, V, P]
-
 
 if __name__ == "__main__":
     # IMPORTANT game definition
