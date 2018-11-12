@@ -2,6 +2,7 @@ import pickle
 import tensorflow as tf
 from nn import *
 from Games.Games import *
+from Games.TicTacToe import *
 from nn import NN
 
 def load_data_for_training(game):
