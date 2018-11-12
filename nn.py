@@ -73,7 +73,8 @@ class NN():
             inputs=vh_dense,
             units=1,
             use_bias=False,
-            activation=tf.nn.tanh
+            activation=tf.nn.tanh,
+            name = 'value_head'
         )
 
         return vh_out
@@ -156,7 +157,8 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-    def fit(self, X, value, policy, trainLabels, batch_size, opimizer='AdamOptimizer'):
+    def fit(self, X, value, policy, trainLabels, batch_size, 
+    	opimizer='AdamOptimizer', saver_path = './model/checkpoint/model.ckpt'):
         """
         Args:
             X: input
@@ -173,11 +175,37 @@ class NN():
             train_step = tf.train.GradientDescentOptimizer(
                 lr).minimize(self.loss)
 
-        with tf.Session() as sess:
+        saver = tf.train.Saver()
+        config = tf.ConfigProto()
+    	config.gpu_options.allow_growth=True
+
+        with tf.Session(config=config) as sess:
             sess.run(init)
             for step in range(self.train_steps):
-                [batch_X, batch_Y] = getBatch(
+                [batch_X, batch_Y, batch_Z] = getBatch(
                     X, step, self.batch_size, value_labels, policy_labels)
-                train_step.run(feed_dict={X: batch_X, Y: batch_Y})
+                train_step.run(feed_dict={X: batch_X, Y: batch_Y, Z: batich_Z})
 
+            saved_path = saver.save(sess,saver_path) 
         return None
+
+
+    def pred(new_input, saver_path = './model/checkpoint/model.ckpt'):
+    	meta_path = saver_path+'.meta'
+    	model_path = saver_path
+    	saver = tf.train.import_meta_graph(meta_path)
+    	config = tf.ConfigProto()
+    	config.gpu_options.allow_growth=True
+	    with tf.Session(config=config) as sess:
+	        saver.restore(sess, model_path) # 导入变量值
+	        graph = tf.get_default_graph()
+	        value_prob_op = graph.get_operation_by_name('value_head') 
+			value_pred = graph.get_tensor_by_name('value_head:0') 
+			vh_pred = sess.run(value_pred, feed_dict={X:new_input})
+			policy_prob_op = graph.get_operation_by_name('policy_head') 
+			policy_pred = graph.get_tensor_by_name('policy_head:0') 
+			ph_pred = sess.run(policy_pred, feed_dict={X:new_input})
+			ph_pred = tf.argmax(ph_pred, axis=1)
+			pred = [vh_pred, ph_pred]
+
+		return pred
