@@ -6,13 +6,14 @@ import numpy as np
 import pickle
 import random
 import tensorflow as tf
-from time import sleep
+from time import sleep, strftime, gmtime
 from training import load_data_for_training
 import uct
 
-game_interface = ConnectFour()
+game_interface = TicTacToe()
 game = GameGlue(game_interface)
 ai = uct.UCTValues(game)
+
 
 def random_move():
     global game
@@ -46,18 +47,17 @@ def manual_move():
             action = -1
     return action
 
+
 def ai_move(ai):
     global game
     ai.update(game.state)
     return ai.get_action()
 
-def simulation(n_episodes=100, opponent=random_move,
+
+def simulation(results, n_episodes=100, opponent=random_move,
                render=True, save_episodes=False, evaluation=False):
 
     global game
-
-    if save_episodes:
-        memory = []
 
     if evaluation:
         total_reward = 0
@@ -102,54 +102,68 @@ def simulation(n_episodes=100, opponent=random_move,
             for i in range(len(episode)):
                 episode[len(episode) - i - 1][2] = reward
                 reward = reward * (-1)
-            memory.append(episode)
+            results.put(episode)
 
-    if save_episodes:
-        pickle.dump(memory, open(game.name, "wb"))
-        if evaluation:
-            return [memory, total_reward]
-    elif evaluation:
+    if evaluation:
         return total_reward
 
 
-def elo_rating(elo_opponent=0, episodes=100, opponent=random_move):
-    reward = simulation(episodes, random_move, render=False, evaluation=True)
+def elo_rating(results, elo_opponent=0, episodes=100, opponent=random_move):
+    reward = simulation(results, episodes, random_move,
+                        render=False, evaluation=True)
     elo = (reward * 400) / episodes + elo_opponent
     return elo
 
 
-# UNCOMMENT THIS for testing manually
-# simulation(10, render=True, opponent=manual_move, save_episodes=True)
-
-# UNCOMMENT THIS for testing the ELO rating
-# print("ELO rating against random: ", elo_rating(episodes = 10))
-
-if __name__ == "__main__":  
+if __name__ == "__main__":
 
     render_game = True
-    save_episodes = False
+    save_episodes = True
+    num_episodes = 1
 
     # Define IPC manager
     manager = multiprocessing.Manager()
 
     # Define a list (queue) for tasks and computation results
-    tasks = manager.Queue()
     results = manager.Queue()
 
     # Create process pool with two processes
-    num_simulations = 1
+    num_simulations = 2
     num_processes = 1 + num_simulations
-    pool = multiprocessing.Pool(processes=num_processes)  
+    pool = multiprocessing.Pool(processes=num_processes)
     processes = []
 
     for i in range(num_simulations):
         # Initiate the worker processes for simulation
-        new_process = multiprocessing.Process(target=simulation, args = (200, partial(ai_move, ai), render_game, save_episodes,))
+        new_process = multiprocessing.Process(target=simulation, args=(
+            results, num_episodes, partial(ai_move, ai), render_game, save_episodes,))
         processes.append(new_process)
         new_process.start()
 
+    # UNCOMMENT THIS for testing manually
+    # simulation(results, 10, render=True, opponent=manual_move, save_episodes=True)
+
+    # UNCOMMENT THIS for testing the ELO rating
+    # print("ELO rating against random: ", elo_rating(results, episodes = 10))
+
     # Set process for training the network
-    new_process = multiprocessing.Process(target=load_data_for_training, args=(game_interface,))
+    new_process = multiprocessing.Process(
+        target=load_data_for_training, args=(game_interface,))
     processes.append(new_process)
     new_process.start()
 
+    if save_episodes:
+        num_finished_simulations = 0
+        memory = []
+        while True:
+            # Read result
+            new_result = results.get()
+            # Save in list
+            memory.append(new_result)
+            num_finished_simulations += 1
+            print('Result:' + str(new_result))
+
+            if num_finished_simulations == num_simulations * num_episodes:
+                pickle.dump(results, open(
+                    game.name + strftime("%Y-%m-%d %H:%M", gmtime()), "wb"))
+                break
