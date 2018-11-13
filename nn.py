@@ -197,7 +197,7 @@ class NN():
     	config = tf.ConfigProto()
     	config.gpu_options.allow_growth=True
 	    with tf.Session(config=config) as sess:
-	        saver.restore(sess, model_path) # 导入变量值
+	        saver.restore(sess, model_path)
 	        graph = tf.get_default_graph()
 	        value_prob_op = graph.get_operation_by_name('value_head') 
 			value_pred = graph.get_tensor_by_name('value_head:0') 
