@@ -14,7 +14,7 @@ from training import load_data_for_training
 import uct
 
 # change the following line to change game
-game_interface = ConnectFour()
+game_interface = TicTacToe()
 game = GameGlue(game_interface)
 ai = uct.UCTValues(game)
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     render_game = False
     save_episodes = True
-    num_episodes = 70
+    num_episodes = 1
 
     # Define IPC manager
     manager = multiprocessing.Manager()
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     results = manager.Queue()
 
     # Create process pool with two processes
-    num_simulations = 3
+    num_simulations = 4
     num_processes = 1 + num_simulations
     pool = multiprocessing.Pool(processes=num_processes)
     processes = []
@@ -177,8 +177,8 @@ if __name__ == "__main__":
             bar.update(num_finished_simulations)
 
             if num_finished_simulations == total_episodes:
-                pickle.dump(results, open(
-                    game.name + strftime("%Y-%m-%d %H:%M", gmtime()), "wb"))
+                pickle.dump(memory, open(
+                    game.name + strftime("%Y-%m-%d %H-%M", gmtime()), "wb"))
                 break
 
         bar.finish()
