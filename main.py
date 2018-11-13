@@ -76,7 +76,7 @@ def simulation(results, n_episodes=100, opponent=random_move,
         while not game.terminal:
 
             if render:
-                game.render()
+                game_interface.render()
 
             # collect observations
             if player:

@@ -59,17 +59,12 @@ class GameGlue:
         self.last_state = self.game.step(action)
         self.ended = self.game.terminal
         return self.last_state
-    def render(self):
-        self.game.render()
 
     def starting_state(self):
         return self.__class__(self.game.__class__()).state
 
     def pack_state(self, data):
         self.state = data
-        return self.state
-
-    def unpack_state(self, state):
         return self.state
 
     def next_state(self, state, action):
@@ -79,26 +74,16 @@ class GameGlue:
         game_copy.invert_board()
         return game_copy.state
 
-    def is_legal(self, history, action):
+    def legal_actions(self, last_state):
         game_copy = deepcopy(self)
-        game_copy.state = history[-1]
-        return action in game_copy.legal_moves()
-
-    def legal_actions(self, history):
-        game_copy = deepcopy(self)
-        game_copy.state = history[-1]
+        game_copy.state = last_state
         return game_copy.legal_moves()
-
-    def is_ended(self, history):
-        game_copy = deepcopy(self)
-        game_copy.state = history[-1]
-        return game_copy.ended
 
     def win_values(self, history):
         game_copy = deepcopy(self)
-        game_copy.state = history[-1]
+        game_copy.state = history
 
-        if not game_copy.ended:
+        if not history[1]:
             return
 
         if game_copy.last_state == 1:

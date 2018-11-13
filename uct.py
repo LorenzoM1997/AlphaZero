@@ -42,7 +42,7 @@ class UCT(object):
         self.stats.clear()
 
         state = self.history[-1]
-        legal = self.board.legal_actions(self.history[:])
+        legal = self.board.legal_actions(state)
 
         # Bail out early if there is no real choice to be made.
         if not legal:
@@ -87,7 +87,7 @@ class UCT(object):
 
         expand = True
         for t in range(1, self.max_actions + 1):
-            legal = self.board.legal_actions(history_copy)
+            legal = self.board.legal_actions(history_copy[-1])
             actions_states = [(p, self.board.next_state(state, p)) for p in legal]
 
             if all(S in stats for p, S in actions_states):
@@ -96,7 +96,7 @@ class UCT(object):
                     sum(stats[S].visits for p, S in actions_states) or 1)
                 value, action, state = max(
                     ((stats[S].value / (stats[S].visits or 1)) +
-                     self.C * sqrt(log_total / (stats[S].visits or 1)), p, S)
+                     self.C * 2 * sqrt(log_total / (stats[S].visits or 1)), p, S)
                     for p, S in actions_states
                 )
             else:
@@ -113,11 +113,12 @@ class UCT(object):
 
             visited_states.append(state)
 
-            if self.board.is_ended(history_copy):
+            # check if the game is ended
+            if history_copy[-1][1]:
                 break
 
         # Back-propagation
-        end_values = self.end_values(history_copy)
+        end_values = self.end_values(history_copy[-1])
         multiplier = -1
         for i in range(len(visited_states)):
             multiplier *= -1
