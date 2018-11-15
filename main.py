@@ -126,10 +126,13 @@ if __name__ == "__main__":
     # variables
     render_game = False
     save_episodes = True
-    num_episodes = 70
+    num_episodes = 50
     episode_to_save = 10
-    num_simulations = 3
+    num_simulations = 4
     filename = 'saved\\' + game.name + strftime("%Y-%m-%d", gmtime()) + str(np.random.randint(10000))
+
+    # calculate total number of episodes
+    total_episodes = num_simulations * num_episodes
 
     # Define IPC manager
     manager = multiprocessing.Manager()
@@ -142,6 +145,9 @@ if __name__ == "__main__":
     num_processes = 1 + num_simulations
     pool = multiprocessing.Pool(processes=num_processes)
     processes = []
+
+    for i in range(num_simulations):
+        tasks.put(num_episodes)
 
     for i in range(num_simulations):
         # Initiate the worker processes for simulation
@@ -168,9 +174,6 @@ if __name__ == "__main__":
         num_finished_simulations = 0
         memory = []
 
-        # calculate total number of episodes
-        total_episodes = num_simulations * num_episodes
-
          # progressbar
         bar = progressbar.ProgressBar(maxval= total_episodes, \
         widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
@@ -178,11 +181,9 @@ if __name__ == "__main__":
 
         while True:
 
+            print(num_finished_simulations)
             # save memory every 10 episodes
-            if num_finished_simulations % episode_to_save == 0 and num_episodes > 0:
-                for i in range(num_simulations):
-                    tasks.put(episode_to_save)
-                num_episodes -= episode_to_save
+            if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
                 pickle.dump(memory, open(filename, "wb"))
 
             # Read result
