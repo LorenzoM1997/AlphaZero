@@ -7,8 +7,10 @@ from nn import NN
 
 def load_data_for_training(game):
 
+    filename = 'saved\\' + game.name
+
     try:
-        data = pickle.load(open(game.name, "rb"))  # load the data from file
+        data = pickle.load(open(filename, "rb"))  # load the data from file
     except:
         print("Data not found.")
         return None

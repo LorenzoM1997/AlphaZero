@@ -129,7 +129,7 @@ if __name__ == "__main__":
     num_episodes = 70
     episode_to_save = 10
     num_simulations = 3
-    filename = game.name + strftime("saved/%Y-%m-%d", gmtime()) + str(np.random.randint(10000))
+    filename = 'saved\\' + game.name + strftime("%Y-%m-%d", gmtime()) + str(np.random.randint(10000))
 
     # Define IPC manager
     manager = multiprocessing.Manager()
