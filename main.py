@@ -16,24 +16,22 @@ import uct
 # change the following line to change game
 game_interface = TicTacToe()
 game = GameGlue(game_interface)
-ai = uct.UCTValues(game)
-
 
 def random_move():
     global game
     action = np.random.choice(game.action_space)
     while not game.is_valid(action):
         action = np.random.choice(game.action_space)
-    return action
+    return [action, np.zeros(len(game.action_space))]
 
 
 def epsilon_greedy(greedy_move):
     epsilon = 0.1
     if random.random() < 0.1:
-        action = random_move()
+        action, policy = random_move()
     else:
-        action = greedy_move()
-    return action
+        action, policy = greedy_move()
+    return [action, policy]
 
 
 def manual_move():
@@ -49,19 +47,23 @@ def manual_move():
         except BaseException:
             print("enter a number")
             action = -1
-    return action
+    return [action, np.zeros(len(game.action_space))]
 
 
 def ai_move(ai):
     global game
     ai.update(game.state)
-    return ai.get_action()
+    action = ai.get_action()
+    policy = ai.policy
+    return [action, policy]
 
 
-def simulation(results, n_episodes=100, opponent=random_move,
+def simulation(results, tasks, main_player=random_move, opponent=random_move,
                render=True, save_episodes=False, evaluation=False):
 
     global game
+
+    n_episodes = tasks.get()
 
     if evaluation:
         total_reward = 0
@@ -80,15 +82,12 @@ def simulation(results, n_episodes=100, opponent=random_move,
 
             # collect observations
             if player:
-                # FIXME: should choose the best choice through the MCTS
-                ai.update(game.state)
-                action = ai.get_action()
-
+                action, policy = main_player()
             else:
-                action = opponent()
+                action, policy = opponent()
 
             if save_episodes:
-                tuple = [game.board, action, 0]
+                tuple = [game.board, policy, 0]
                 episode.append(tuple)
             reward = game.step(action)
 
@@ -109,11 +108,11 @@ def simulation(results, n_episodes=100, opponent=random_move,
             results.put(episode)
 
     if evaluation:
-        return total_reward
+        return total_reward, n_episodes
 
 
-def elo_rating(results, elo_opponent=0, episodes=100, opponent=random_move):
-    reward = simulation(results, episodes, random_move,
+def elo_rating(results, tasks, elo_opponent=0, main_player=random_move, opponent=random_move):
+    reward, episodes = simulation(results, tasks, main_player, opponent,
                         render=False, evaluation=True)
     elo = (reward * 400) / episodes + elo_opponent
     return elo
@@ -121,18 +120,25 @@ def elo_rating(results, elo_opponent=0, episodes=100, opponent=random_move):
 
 if __name__ == "__main__":
 
+    ai = uct.UCTValues(game)
+    ai_old = uct.UCTValues(game)
+
+    # variables
     render_game = False
     save_episodes = True
-    num_episodes = 1
+    num_episodes = 70
+    episode_to_save = 10
+    num_simulations = 3
+    filename = game.name + strftime("saved/%Y-%m-%d", gmtime()) + str(np.random.randint(10000))
 
     # Define IPC manager
     manager = multiprocessing.Manager()
 
     # Define a list (queue) for tasks and computation results
+    tasks = manager.Queue()
     results = manager.Queue()
 
     # Create process pool with two processes
-    num_simulations = 4
     num_processes = 1 + num_simulations
     pool = multiprocessing.Pool(processes=num_processes)
     processes = []
@@ -140,15 +146,17 @@ if __name__ == "__main__":
     for i in range(num_simulations):
         # Initiate the worker processes for simulation
         new_process = multiprocessing.Process(target=simulation, args=(
-            results, num_episodes, partial(ai_move, ai), render_game, save_episodes,))
+            results, tasks, partial(ai_move, ai), partial(ai_move, ai_old), render_game, save_episodes,))
         processes.append(new_process)
         new_process.start()
 
     # UNCOMMENT THIS for testing manually
-    # simulation(results, 10, render=True, opponent=manual_move, save_episodes=True)
+    #tasks.put(1)
+    #simulation(results, tasks, render=True, main_player= partial(ai_move, ai), opponent=manual_move, save_episodes=True)
 
     # UNCOMMENT THIS for testing the ELO rating
-    # print("ELO rating against random: ", elo_rating(results, episodes = 10))
+    #tasks.put(100)
+    #print("ELO rating against random: ", elo_rating(results, tasks, partial(ai_move, ai)))
 
     # Set process for training the network
     new_process = multiprocessing.Process(
@@ -169,6 +177,14 @@ if __name__ == "__main__":
         bar.start()
 
         while True:
+
+            # save memory every 10 episodes
+            if num_finished_simulations % episode_to_save == 0 and num_episodes > 0:
+                for i in range(num_simulations):
+                    tasks.put(episode_to_save)
+                num_episodes -= episode_to_save
+                pickle.dump(memory, open(filename, "wb"))
+
             # Read result
             new_result = results.get()
             # Save in list
@@ -177,8 +193,7 @@ if __name__ == "__main__":
             bar.update(num_finished_simulations)
 
             if num_finished_simulations == total_episodes:
-                pickle.dump(memory, open(
-                    game.name + strftime("%Y-%m-%d %H-%M", gmtime()), "wb"))
+                pickle.dump(memory, open(filename, "wb"))
                 break
 
         bar.finish()

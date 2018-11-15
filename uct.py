@@ -1,5 +1,5 @@
 from __future__ import division
-
+import numpy as np
 import time
 from math import log, sqrt
 from random import choice
@@ -23,7 +23,7 @@ class UCT(object):
         self.data = {}
         self.DEBUG = False
 
-        self.calculation_time = float(kwargs.get('time', 5))
+        self.calculation_time = float(kwargs.get('time', 10))
         self.max_actions = int(kwargs.get('max_actions', 1000))
 
         # Exploration constant, increase for more exploratory actions,
@@ -55,20 +55,26 @@ class UCT(object):
         while time.time() - begin < self.calculation_time:
             self.run_simulation()
             games += 1
+            if games >= 1600:
+                break
 
         # Display the number of calls of `run_simulation` and the
         # time elapsed.
         self.data.update(games=games, max_depth=self.max_depth,
                          time=str(time.time() - begin))
-        if self.DEBUG:
-            print(self.data['games'], self.data['time'])
-            print("Maximum depth searched:", self.max_depth)
 
         # Store and display the stats for each possible action.
         self.data['actions'] = self.calculate_action_values(state, legal)
         if self.DEBUG:
+            print(self.data['games'], self.data['time'])
+            print("Maximum depth searched:", self.max_depth)
             for m in self.data['actions']:
                 print(self.action_template.format(**m))
+        
+        # return mcts policy
+        self.policy = np.zeros(len(self.board.action_space))
+        for m in self.data['actions']:
+            self.policy[m['action']] = m['average']
 
         # Pick the action with the highest average value.
         return self.data['actions'][0]['action']
