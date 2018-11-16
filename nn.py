@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-	def __init__(self, X, value, policy, lr, input_dim, num_hidden_layers, value_head_dim, policy_head_dim, filters, kernelsize, training, strides=1, padding="same", batch_size = 128):
+	def __init__(self, X, value, policy, lr, input_dim, num_hidden_layers, filters, kernelsize, training, strides=1, padding="same", batch_size = 128):
 		""" 
 		Args:
 			X: Input data, dim = [n obs, Length, height, layers of input]
@@ -36,11 +36,11 @@ class NN():
 		self.policy_label = tf.placeholder(shape=np.append(None,policy.shape), dtype=tf.float32)
 		self.value_label = tf.placeholder(tf.float32, [None, 1])
 
-		self.hidden_layers = _build_hidden_layers()
-		self.value_head = _build_value_head()
-		self.policy_head = _build_policy_head()
-		self.ce_loss = _cross_entropy_with_logits()
-		self.mse_loss = _mean_sq_error()
+		self.hidden_layers = self._build_hidden_layers()
+		self.value_head = self._build_value_head()
+		self.policy_head = self._build_policy_head()
+		self.ce_loss = self._cross_entropy_with_logits()
+		self.mse_loss = self._mean_sq_error()
 		self.train_times = math.ceil(X.shape[0]/batch_size)
 
 	def _build_hidden_layers(self):
