@@ -102,7 +102,7 @@ class UCT(object):
                     sum(stats[S].visits for p, S in actions_states) or 1)
                 value, action, state = max(
                     ((stats[S].value / (stats[S].visits or 1)) +
-                     self.C * 2 * sqrt(log_total / (stats[S].visits or 1)), p, S)
+                     self.C * sqrt(log_total / (stats[S].visits or 1)), p, S)
                     for p, S in actions_states
                 )
             else:
@@ -134,27 +134,6 @@ class UCT(object):
             S = stats[state]
             S.visits += 1
             S.value += end_values * multiplier
-
-
-class UCTWins(UCT):
-    action_template = "{action}: {percent:.2f}% ({wins} / {plays})"
-
-    def __init__(self, board, **kwargs):
-        super(UCTWins, self).__init__(board, **kwargs)
-        self.end_values = board.win_values
-
-    def calculate_action_values(self, state, legal):
-        actions_states = ((p, self.board.next_state(state, p)) for p in legal)
-        return sorted(
-            ({'action': p,
-              'percent': 100 * self.stats[S].value / self.stats[S].visits,
-              'wins': self.stats[S].value,
-              'plays': self.stats[S].visits}
-             for p, S in actions_states),
-            key=lambda x: (x['percent'], x['plays']),
-            reverse=True
-        )
-
 
 class UCTValues(UCT):
     action_template = "{action}: {average:.1f} ({sum} / {plays})"

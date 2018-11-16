@@ -36,12 +36,7 @@ class TicTacToe(Game):
         return legal_moves
 
     def invert_board(self):
-        for row in range(3):
-            for col in range(3):
-                if self.board[row][col] == 1:
-                    self.board[row][col] = 2
-                elif self.board[row][col] == 2:
-                    self.board[row][col] = 1
+        self.board = (3 - self.board) % 3
 
     def step(self, action):
         """
