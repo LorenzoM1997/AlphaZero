@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, filters=32, kernelsize=5, strides=1, padding="same", batch_size=128, train_steps=500):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, kernel_size = 3, filters=32, strides=1, padding="SAME", batch_size=128, train_steps=500):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -14,9 +14,8 @@ class NN():
             num_hidden_layers (int): Number of hidden layers
             lr (float): Learning rate
             filters (int): num features in output of convolution
-            kernelsize (int tuple/list or int): Size of convolving window
             strides (int tuple/list or int): Stride of convolution
-            padding ("same" or "valid"): "same" if 0 adding added during convolution
+            padding ("SAME" or "valid"): "SAME" if 0 adding added during convolution
             batch_size (int): Default 128, batch size in one training step
             train_steps (int): Default = 500, training iterations
         """
@@ -24,11 +23,12 @@ class NN():
         self.input_dim = input_dim
         self.num_hidden_layers = num_hidden_layers
         self.filters = filters
-        self.kernelsize = kernelsize
-        self.strides = strides
+        self.strides = [1, strides, strides, 1]
         self.padding = padding
         self.training = training
         self.batch_size = batch_size
+        self.kernel_size = kernel_size
+        self.policy_head_dim = policy_head_dim
 
         self.inputs = tf.placeholder(tf.float32, shape=np.append(
             None, input_dim).tolist())  # Variable batch size
@@ -48,13 +48,18 @@ class NN():
             List of resBlocks
         """
         hidden_layers = []
-        resblk = self.resBlock(self.inputs, self.filters,
-                               self.kernelsize, True, strides=self.strides, padding=self.padding)
+
+        # first convolutional layer is different
+        initial_filter = tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
+        first_layer = tf.nn.conv2d(self.inputs, initial_filter, self.strides, self.padding)
+        hidden_layers.append(first_layer)
+
+        resblk = self.resBlock(first_layer, self.filters,True, strides=self.strides, padding=self.padding)
         hidden_layers.append(resblk)
-        if num_hidden_layers > 1:
-            for i in range(num_hidden_layers-1):
+        if self.num_hidden_layers > 1:
+            for i in range(self.num_hidden_layers-1):
                 resblk = self.resBlock(
-                    resblk, self.filters, self.kernelsize, True, self.strides, self.padding)
+                    resblk, self.filters, True, self.strides, self.padding)
                 hidden_layers.append(resblk)
         return hidden_layers
 
@@ -63,8 +68,12 @@ class NN():
         Returns:
             vh_out (tf.dense, units=1): value estimation of current state
         """
-        vh = self.conv2d(self.hidden_layers[-1], (1, 1), 1, "same")
-        vh_bn = batch_norm(vh, self.training)
+
+        # goes back from n channels to 1
+        vh_filter = tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, self.filters, 1]))
+        vh = tf.nn.conv2d(self.hidden_layers[-1], vh_filter, [1,1,1,1], "SAME")
+
+        vh_bn = self.batch_norm(vh, self.training)
         vh_bn_relu = tf.nn.relu(vh_bn)
         vh_flat = tf.layers.flatten(vh_bn_relu)
         vh_dense = tf.layers.dense(
@@ -87,24 +96,27 @@ class NN():
         Returns:
             ph_out (tf.dense, units=policy_head_dim): probability distribution 
         """
-        ph = self.conv2d(self.hidden_layers[-1], (1, 1), 1, "same")
-        ph_bn = batch_norm(ph, self.training)
+
+        # goes back from n channels to 1
+        ph_filter = tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, self.filters, 1]))
+        ph = tf.nn.conv2d(self.hidden_layers[-1], ph_filter, [1,1,1,1], "SAME")
+
+        ph_bn = self.batch_norm(ph, self.training)
         ph_bn_relu = tf.nn.relu(ph_bn)
         ph_flat = tf.layers.flatten(ph_bn_relu)
         ph_dense = tf.layers.dense(
-            inputs=ph_dense,
-            units=policy_head_dim,
+            inputs=ph_flat,
+            units= self.policy_head_dim,
             use_bias=False,
             activation=tf.nn.tanh,
             name='value_head'
         )
         return ph_dense
 
-    def conv2d(self, inputs, filters, kernelsize, strides, padding):
-        return tf.layers.Conv2D(
-            inputs=inputs,
-            filters=filters,
-            kernel_size=kernelsize,
+    def conv2d(self, inputs, channels, strides, padding):
+        return tf.nn.conv2d(
+            input=inputs,
+            filter=tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, channels, channels])),
             strides=strides,
             padding=padding,
         )
@@ -113,30 +125,28 @@ class NN():
         return tf.layers.batch_normalization(
             inputs=inputs,
             axis=1,
-            momentum=_BATCH_NORM_DECAY,
-            epsilon=_BATCH_NORM_EPSILON,
+            momentum= BATCH_MOMENTUM,
+            epsilon= BATCH_EPSILON,
             center=True,
             scale=True,
             training=training,
             fused=True)
 
-    def resBlock(self, inputs, filters, kernelsize, training, strides=1, padding="same"):
+    def resBlock(self, inputs, filters, training, strides=1, padding="SAME"):
         """
         Args:
                 inputs (tensor): Tensor input
                 filter (int): Number of channels in the output
-                kernelsize (int,tuple): Size of convolution window
                 strides (int): Stride of convolution
-                padding (int): "valid" or "same"
+                padding (int): "valid" or "SAME"
                 training (bool): True if training
         """
         shortcut = tf.identity(inputs)
-        conv1 = self.conv2d(inputs, filters, kernelsize, strides, padding)
+        conv1 = self.conv2d(inputs, filters, strides, padding)
         conv1_bn = self.batch_norm(conv1, training)
         conv1_bn_relu = tf.nn.relu(conv1_bn)
-        conv2 = self.conv2d(conv1_bn_relu, filters,
-                            kernelsize, strides, padding)
-        conv2_bn = batch_norm(conv2, training)
+        conv2 = self.conv2d(conv1_bn_relu, filters, strides, padding)
+        conv2_bn = self.batch_norm(conv2, training)
         y = conv2_bn + shortcut
         y_relu = tf.nn.relu(y)
         return y
