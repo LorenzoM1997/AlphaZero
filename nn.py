@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr = 0.001, filters = 32, kernelsize = 5, strides=1, padding="same", batch_size=128, train_steps=500):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, filters=32, kernelsize=5, strides=1, padding="same", batch_size=128, train_steps=500):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -33,7 +33,7 @@ class NN():
         self.inputs = tf.placeholder(tf.float32, shape=np.append(
             None, input_dim).tolist())  # Variable batch size
         self.policy_label = tf.placeholder(tf.float32,
-            shape=np.append(None, policy_head_dim.shape).tolist() )
+                                           shape=np.append(None, policy_head_dim.shape).tolist())
         self.value_label = tf.placeholder(tf.float32, [None, 1])
         self.hidden_layers = self._build_hidden_layers()
         self.value_head = self._build_value_head()
@@ -49,7 +49,7 @@ class NN():
         """
         hidden_layers = []
         resblk = self.resBlock(self.inputs, self.filters,
-                          self.kernelsize, True, strides = self.strides, padding = self.padding)
+                               self.kernelsize, True, strides=self.strides, padding=self.padding)
         hidden_layers.append(resblk)
         if num_hidden_layers > 1:
             for i in range(num_hidden_layers-1):
@@ -78,7 +78,7 @@ class NN():
             units=1,
             use_bias=False,
             activation=tf.nn.tanh,
-            name = 'value_head'
+            name='value_head'
         )
         return vh_out
 
@@ -96,11 +96,11 @@ class NN():
             units=policy_head_dim,
             use_bias=False,
             activation=tf.nn.tanh,
-            name = 'value_head'
+            name='value_head'
         )
         return ph_dense
 
-    def conv2d(self,inputs, filters, kernelsize, strides, padding):
+    def conv2d(self, inputs, filters, kernelsize, strides, padding):
         return tf.layers.Conv2D(
             inputs=inputs,
             filters=filters,
@@ -109,7 +109,7 @@ class NN():
             padding=padding,
         )
 
-    def batch_norm(self,inputs, training, BATCH_MOMENTUM=0.997, BATCH_EPSILON=1e-5):
+    def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.997, BATCH_EPSILON=1e-5):
         return tf.layers.batch_normalization(
             inputs=inputs,
             axis=1,
@@ -135,7 +135,7 @@ class NN():
         conv1_bn = self.batch_norm(conv1, training)
         conv1_bn_relu = tf.nn.relu(conv1_bn)
         conv2 = self.conv2d(conv1_bn_relu, filters,
-                       kernelsize, strides, padding)
+                            kernelsize, strides, padding)
         conv2_bn = batch_norm(conv2, training)
         y = conv2_bn + shortcut
         y_relu = tf.nn.relu(y)
@@ -175,8 +175,8 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-    def fit(self, X, v_lab, p_lab, batch_size, 
-    	opimizer='AdamOptimizer', saver_path = './model/checkpoint/model.ckpt'):
+    def fit(self, X, v_lab, p_lab, batch_size,
+            opimizer='AdamOptimizer', saver_path='./model/checkpoint/model.ckpt'):
         """
         Args:
             X: input
@@ -195,7 +195,7 @@ class NN():
 
         saver = tf.train.Saver()
         config = tf.ConfigProto()
-        config.gpu_options.allow_growth=True
+        config.gpu_options.allow_growth = True
 
         with tf.Session(config=config) as sess:
             sess.run(init)
@@ -204,25 +204,24 @@ class NN():
                     X, step, self.batch_size, value_labels, policy_labels)
                 train_step.run(feed_dict={X: batch_X, Y: batch_Y, Z: batich_Z})
 
-            saved_path = saver.save(sess,saver_path) 
+            saved_path = saver.save(sess, saver_path)
         return None
 
-
-    def pred(new_input, saver_path = './model/checkpoint/model.ckpt'):
+    def pred(new_input, saver_path='./model/checkpoint/model.ckpt'):
         meta_path = saver_path+'.meta'
         model_path = saver_path
         saver = tf.train.import_meta_graph(meta_path)
         config = tf.ConfigProto()
-        config.gpu_options.allow_growth=True
+        config.gpu_options.allow_growth = True
         with tf.Session(config=config) as sess:
             saver.restore(sess, model_path)
             graph = tf.get_default_graph()
-            value_prob_op = graph.get_operation_by_name('value_head') 
-            value_pred = graph.get_tensor_by_name('value_head:0') 
-            vh_pred = sess.run(value_pred, feed_dict={X:new_input})
-            policy_prob_op = graph.get_operation_by_name('policy_head') 
-            policy_pred = graph.get_tensor_by_name('policy_head:0') 
-            ph_pred = sess.run(policy_pred, feed_dict={X:new_input})
+            value_prob_op = graph.get_operation_by_name('value_head')
+            value_pred = graph.get_tensor_by_name('value_head:0')
+            vh_pred = sess.run(value_pred, feed_dict={X: new_input})
+            policy_prob_op = graph.get_operation_by_name('policy_head')
+            policy_pred = graph.get_tensor_by_name('policy_head:0')
+            ph_pred = sess.run(policy_pred, feed_dict={X: new_input})
             ph_pred = tf.argmax(ph_pred, axis=1)
             pred = [vh_pred, ph_pred]
         return pred
