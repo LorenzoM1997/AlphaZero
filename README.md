@@ -13,6 +13,7 @@ Everyone should have installed:
     pip install tensorflow
     pip install numpy
     pip install autopep8
+    pip install progressbar2
 
 If you have a Nvidia gpu, you should try to install the gpu version of tensorflow
 
@@ -25,13 +26,15 @@ Before uploading a file, format the file by running
 
     autopep8 --in-place filename.py
 ## Monte Carlo Tree Search
-The class MCT should be able to do the following
-1. save the current node
-2. from the current node, select the best action
-3. update a node
-4. save the Monte Carlo tree
-5. load the Monte Carlo tree
-6. be game-agnostic, so it gets the information from a generic Game object
+The Monte Carlo Tree search is implemented in the file `uct.py`. It needs GameGlue() to work correcly.
+The improvements now needed in the file are:
+1. save the Monte Carlo tree
+2. load the Monte Carlo tree
+
+## Asychronous behavior
+When running `main.py` the file uses the multiprocessing module to run different processes in parallel. This reduces the time needed to run the episodes and allow us to use all the CPU resources. Without training the neural network, the program seems to be able to run without any problem 3 simulations at a time with laptop CPU (probably up to 5).
+
+The games simulated are saved in a single file at each session.
 
 ## Memory
 
@@ -39,7 +42,7 @@ The episodes are saved with pickle, to open it you need to import it
 
     import pickle
 
-The episodes for a game are saved in a file, which filename is the game name. You can know the exact name by looking at the variable name of the class Game() in Games.py. You can extract the data with:
+The episodes for a game are saved in a file, which filename is the game name + a timestamp. You can know the exact name by looking at the variable name of the class Game() in Games.py. You can extract the data with:
 
     data = pickle.load(open(filename, "rb"))
     
@@ -50,7 +53,7 @@ Each entry in the list is therefore a list with 3 elements
 3. The reward associated to the game for that particular player.
 
 ## Game implementation
-There are currently two games available
+All the games are saved in standalone files in the folder Games. In the folder there is also a file, Games.py where the class Game is implemented. There are currently two games available
 1. TicTacToe()
 2. ConnectFour()
 
