@@ -59,6 +59,10 @@ class NN():
         return hidden_layers
 
     def _build_value_head(self):
+        """
+        Returns:
+            vh_out (tf.dense, units=1): value estimation of current state
+        """
         vh = self.conv2d(self.hidden_layers[-1], (1, 1), 1, "same")
         vh_bn = batch_norm(vh, self.training)
         vh_bn_relu = tf.nn.relu(vh_bn)
@@ -76,11 +80,25 @@ class NN():
             activation=tf.nn.tanh,
             name = 'value_head'
         )
-
         return vh_out
 
-    def _build_policy_head():
-        return None
+    def _build_policy_head(self):
+        """
+        Returns:
+            ph_out (tf.dense, units=policy_head_dim): probability distribution 
+        """
+        ph = self.conv2d(self.hidden_layers[-1], (1, 1), 1, "same")
+        ph_bn = batch_norm(ph, self.training)
+        ph_bn_relu = tf.nn.relu(ph_bn)
+        ph_flat = tf.layers.flatten(ph_bn_relu)
+        ph_dense = tf.layers.dense(
+            inputs=ph_dense,
+            units=policy_head_dim,
+            use_bias=False,
+            activation=tf.nn.tanh,
+            name = 'value_head'
+        )
+        return ph_dense
 
     def conv2d(self,inputs, filters, kernelsize, strides, padding):
         return tf.layers.Conv2D(
@@ -162,8 +180,8 @@ class NN():
         """
         Args:
             X: input
-            value: labels for value
-            policy: labels for policy
+            v_lab: value label
+            p_lab: policy label
         """
         init = tf.global_variables_initializer()
 
