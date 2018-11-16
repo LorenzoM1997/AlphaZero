@@ -126,10 +126,10 @@ if __name__ == "__main__":
     # variables
     render_game = False
     save_episodes = True
-    num_episodes = 50
+    num_episodes = 5
     episode_to_save = 10
     num_simulations = 4
-    filename = 'saved\\' + game.name + strftime("%Y-%m-%d", gmtime()) + str(np.random.randint(10000))
+    filename = 'saved\\' + game.name + strftime("%Y-%m-%d-", gmtime()) + str(np.random.randint(10000))
 
     # calculate total number of episodes
     total_episodes = num_simulations * num_episodes
@@ -181,7 +181,6 @@ if __name__ == "__main__":
 
         while True:
 
-            print(num_finished_simulations)
             # save memory every 10 episodes
             if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
                 pickle.dump(memory, open(filename, "wb"))
