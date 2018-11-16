@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, training, lr = 0.001, filters = 32, kernelsize = 5, strides=1, padding="same", batch_size=128, train_steps=500):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr = 0.001, filters = 32, kernelsize = 5, strides=1, padding="same", batch_size=128, train_steps=500):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -102,7 +102,7 @@ class NN():
             training=training,
             fused=True)
 
-    def resBlock(self,inputs, filters, kernelsize, training, strides=1, padding="same"):
+    def resBlock(self, inputs, filters, kernelsize, training, strides=1, padding="same"):
         """
         Args:
                 inputs (tensor): Tensor input
@@ -157,7 +157,7 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-    def fit(self, X, value, policy, trainLabels, batch_size, 
+    def fit(self, X, v_lab, p_lab, batch_size, 
     	opimizer='AdamOptimizer', saver_path = './model/checkpoint/model.ckpt'):
         """
         Args:
@@ -177,7 +177,7 @@ class NN():
 
         saver = tf.train.Saver()
         config = tf.ConfigProto()
-    	config.gpu_options.allow_growth=True
+        config.gpu_options.allow_growth=True
 
         with tf.Session(config=config) as sess:
             sess.run(init)
@@ -191,21 +191,20 @@ class NN():
 
 
     def pred(new_input, saver_path = './model/checkpoint/model.ckpt'):
-    	meta_path = saver_path+'.meta'
-    	model_path = saver_path
-    	saver = tf.train.import_meta_graph(meta_path)
-    	config = tf.ConfigProto()
-    	config.gpu_options.allow_growth=True
-	    with tf.Session(config=config) as sess:
-	        saver.restore(sess, model_path)
-	        graph = tf.get_default_graph()
-	        value_prob_op = graph.get_operation_by_name('value_head') 
-			value_pred = graph.get_tensor_by_name('value_head:0') 
-			vh_pred = sess.run(value_pred, feed_dict={X:new_input})
-			policy_prob_op = graph.get_operation_by_name('policy_head') 
-			policy_pred = graph.get_tensor_by_name('policy_head:0') 
-			ph_pred = sess.run(policy_pred, feed_dict={X:new_input})
-			ph_pred = tf.argmax(ph_pred, axis=1)
-			pred = [vh_pred, ph_pred]
-
-		return pred
+        meta_path = saver_path+'.meta'
+        model_path = saver_path
+        saver = tf.train.import_meta_graph(meta_path)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth=True
+        with tf.Session(config=config) as sess:
+            saver.restore(sess, model_path)
+            graph = tf.get_default_graph()
+            value_prob_op = graph.get_operation_by_name('value_head') 
+            value_pred = graph.get_tensor_by_name('value_head:0') 
+            vh_pred = sess.run(value_pred, feed_dict={X:new_input})
+            policy_prob_op = graph.get_operation_by_name('policy_head') 
+            policy_pred = graph.get_tensor_by_name('policy_head:0') 
+            ph_pred = sess.run(policy_pred, feed_dict={X:new_input})
+            ph_pred = tf.argmax(ph_pred, axis=1)
+            pred = [vh_pred, ph_pred]
+        return pred
