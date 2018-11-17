@@ -29,11 +29,8 @@ class TicTacToe(Game):
         return:
             legal_moves(list): a list with all the legal moves from the current position
         """
-        legal_moves = []
-        for action in self.action_space:
-            if self.is_valid(action):
-                legal_moves.append(action)
-        return legal_moves
+        flat_board = np.reshape(self.board,(9))
+        return np.where(flat_board == 0)[0].tolist()
 
     def invert_board(self):
         self.board = (3 - self.board) % 3

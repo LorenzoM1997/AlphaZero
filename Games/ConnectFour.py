@@ -14,23 +14,15 @@ class ConnectFour(Game):
         self.board = np.zeros((6, 7), dtype=np.uint8)
 
     def is_valid(self, action):
-        col_index = action  # action is in range 0 - 6
-
-        column = self.board[:, col_index]
-        i = 0
-        while i < len(column) and column[i] == 0:
-            i = i + 1
-        row_index = i - 1
-
-        if row_index < 0:
-            return False
-        else:
+        if self.board[0, action] == 0:
             return True
+        else:
+            return False
 
     def legal_moves(self):
         legal_moves = []
         for action in self.action_space:
-            if self.is_valid(action):
+            if self.board[0, action] == 0:
                 legal_moves.append(action)
         return legal_moves
 
@@ -80,66 +72,32 @@ class ConnectFour(Game):
                 return +1
 
         # diagonal top-left to bottom-right
-        for col in range(7):
-            a = 0
-            row = 0
-            while (row < 6) & (col < 7):
-                if self.board[row][col] == 1:
-                    a = a + 1
-                else:
-                    a = 0
-                if a == 4:
-                    self.terminal = True
-                    return +1
-
-                row = row + 1
-                col = col + 1
-
+        col = col_index - row_index
+        a = 0
         for row in range(6):
-            a = 0
-            col = 0
-            while (row < 6) & (col < 7):
+            if col >= 0 and col < 7:
                 if self.board[row][col] == 1:
                     a = a + 1
                 else:
                     a = 0
                 if a == 4:
                     self.terminal = True
-                    return +1
-
-                row = row + 1
-                col = col + 1
+                    return 1
+            col += 1
 
         # diagonal bottom-left to top-right
-        for col in range(7):
-            a = 0
-            row = 5
-            while (row >= 0) & (col < 7):
-                if self.board[row][col] == 1:
-                    a = a + 1
-                else:
-                    a = 0
-                if a == 4:
-                    self.terminal = True
-                    return +1
-
-                row = row - 1
-                col = col + 1
-
+        col = col_index + row_index
+        a = 0
         for row in range(6):
-            a = 0
-            col = 0
-            while (row >= 0) & (col < 7):
+            if col >= 0 and col < 7:
                 if self.board[row][col] == 1:
                     a = a + 1
                 else:
                     a = 0
                 if a == 4:
                     self.terminal = True
-                    return +1
-
-                row = row - 1
-                col = col + 1
+                    return 1
+            col -= 1
 
         # checks if board is filled completely
         if np.any(self.board == 0):
