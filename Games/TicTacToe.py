@@ -55,26 +55,15 @@ class TicTacToe(Game):
         terminal = 1
 
         # to check for 3 in a row horizontal
-        for row in range(3):
-            for col in range(3):
-                if self.board[row][col] != 1:
-                    terminal = 0
-            if terminal == 1:
-                self.terminal = True
-                return +1
-            else:
-                terminal = 1
+        if np.all(self.board[row_index] == 1):
+            self.terminal = True
+            return + 1
 
         # to check for 3 in a row vertical
-        for col in range(3):
-            for row in range(3):
-                if self.board[row][col] != 1:
-                    terminal = 0
-            if terminal == 1:
-                self.terminal = True
-                return +1
-            else:
-                terminal = 1
+        if np.all(self.board[:,col_index] == 1):
+            self.terminal = True
+            return +1
+
         # diagonal top-left to bottom-right
         for diag in range(3):
             if self.board[diag][diag] != 1:
@@ -93,12 +82,11 @@ class TicTacToe(Game):
             return +1
         else:
             terminal = 1
+
         # checks if board is filled completely
-        for row in range(3):
-            for col in range(3):
-                if self.board[row][col] == 0:
-                    terminal = 0
-                    break
+        if np.any(self.board == 0):
+            terminal = 0
+
         if terminal == 1:
             self.terminal = True
         return 0

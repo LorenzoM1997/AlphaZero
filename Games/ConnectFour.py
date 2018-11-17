@@ -58,28 +58,26 @@ class ConnectFour(Game):
         terminal = 1
 
         # to check for 4 in a row horizontal
-        for row in range(6):
-            a = 0
-            for col in range(7):
-                if self.board[row][col] == 1:
-                    a = a + 1
-                else:
-                    a = 0
-                if a == 4:
-                    self.terminal = True
-                    return +1
+        a = 0
+        for col in range(7):
+            if self.board[row_index][col] == 1:
+                a = a + 1
+            else:
+                a = 0
+            if a == 4:
+                self.terminal = True
+                return +1
 
         # to check for 4 in a row vertical
-        for col in range(7):
-            a = 0
-            for row in range(6):
-                if self.board[row][col] == 1:
-                    a = a + 1
-                else:
-                    a = 0
-                if a == 4:
-                    self.terminal = True
-                    return +1
+        a = 0
+        for row in range(6):
+            if self.board[row][col_index] == 1:
+                a = a + 1
+            else:
+                a = 0
+            if a == 4:
+                self.terminal = True
+                return +1
 
         # diagonal top-left to bottom-right
         for col in range(7):
@@ -144,11 +142,9 @@ class ConnectFour(Game):
                 col = col + 1
 
         # checks if board is filled completely
-        for row in range(6):
-            for col in range(7):
-                if self.board[row][col] == 0:
-                    terminal = 0
-                    break
+        if np.any(self.board == 0):
+            terminal = 0
+
         if terminal == 1:
             self.terminal = True
 
