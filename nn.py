@@ -213,7 +213,7 @@ class NN():
         with tf.Session() as sess:
             sess.run(init)
             for step in range(train_iterations):
-                [batch_X, batch_Y, batch_Z] = getBatch(
+                [batch_X, batch_Y, batch_Z] = self.getBatch(
                     X, step, batch_size, v_lab, p_lab)
                 train_step.run(feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batich_Z, self.training: True})
 
