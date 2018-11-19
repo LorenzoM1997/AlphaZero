@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, kernel_size = 3, filters=32, strides=1, padding="SAME", batch_size=128, train_steps=500):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, kernel_size=3, filters=32, strides=1, padding="SAME", batch_size=128, train_steps=500):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -50,11 +50,14 @@ class NN():
         hidden_layers = []
 
         # first convolutional layer is different
-        initial_filter = tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
-        first_layer = tf.nn.conv2d(self.inputs, initial_filter, self.strides, self.padding)
+        initial_filter = tf.Variable(tf.random_uniform(
+            [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
+        first_layer = tf.nn.conv2d(
+            self.inputs, initial_filter, self.strides, self.padding)
         hidden_layers.append(first_layer)
 
-        resblk = self.resBlock(first_layer, self.filters,True, strides=self.strides, padding=self.padding)
+        resblk = self.resBlock(first_layer, self.filters,
+                               True, strides=self.strides, padding=self.padding)
         hidden_layers.append(resblk)
         if self.num_hidden_layers > 1:
             for i in range(self.num_hidden_layers-1):
@@ -70,8 +73,10 @@ class NN():
         """
 
         # goes back from n channels to 1
-        vh_filter = tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, self.filters, 1]))
-        vh = tf.nn.conv2d(self.hidden_layers[-1], vh_filter, [1,1,1,1], "SAME")
+        vh_filter = tf.Variable(tf.random_uniform(
+            [self.kernel_size, self.kernel_size, self.filters, 1]))
+        vh = tf.nn.conv2d(
+            self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
 
         vh_bn = self.batch_norm(vh, self.training)
         vh_bn_relu = tf.nn.relu(vh_bn)
@@ -98,15 +103,17 @@ class NN():
         """
 
         # goes back from n channels to 1
-        ph_filter = tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, self.filters, 1]))
-        ph = tf.nn.conv2d(self.hidden_layers[-1], ph_filter, [1,1,1,1], "SAME")
+        ph_filter = tf.Variable(tf.random_uniform(
+            [self.kernel_size, self.kernel_size, self.filters, 1]))
+        ph = tf.nn.conv2d(
+            self.hidden_layers[-1], ph_filter, [1, 1, 1, 1], "SAME")
 
         ph_bn = self.batch_norm(ph, self.training)
         ph_bn_relu = tf.nn.relu(ph_bn)
         ph_flat = tf.layers.flatten(ph_bn_relu)
         ph_dense = tf.layers.dense(
             inputs=ph_flat,
-            units= self.policy_head_dim,
+            units=self.policy_head_dim,
             use_bias=False,
             activation=tf.nn.tanh,
             name='value_head'
@@ -116,7 +123,8 @@ class NN():
     def conv2d(self, inputs, channels, strides, padding):
         return tf.nn.conv2d(
             input=inputs,
-            filter=tf.Variable(tf.random_uniform([self.kernel_size, self.kernel_size, channels, channels])),
+            filter=tf.Variable(tf.random_uniform(
+                [self.kernel_size, self.kernel_size, channels, channels])),
             strides=strides,
             padding=padding,
         )
@@ -125,8 +133,8 @@ class NN():
         return tf.layers.batch_normalization(
             inputs=inputs,
             axis=1,
-            momentum= BATCH_MOMENTUM,
-            epsilon= BATCH_EPSILON,
+            momentum=BATCH_MOMENTUM,
+            epsilon=BATCH_EPSILON,
             center=True,
             scale=True,
             training=training,

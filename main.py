@@ -17,6 +17,7 @@ import uct
 game_interface = ConnectFour()
 game = GameGlue(game_interface)
 
+
 def random_move():
     global game
     action = np.random.choice(game.legal_moves())
@@ -111,7 +112,7 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
 
 def elo_rating(results, tasks, elo_opponent=0, main_player=random_move, opponent=random_move):
     reward, episodes = simulation(results, tasks, main_player, opponent,
-                        render=False, evaluation=True)
+                                  render=False, evaluation=True)
     elo = (reward * 400) / episodes + elo_opponent
     return elo
 
@@ -127,7 +128,8 @@ if __name__ == "__main__":
     num_episodes = 25
     episode_to_save = 5
     num_simulations = 4
-    filename = 'saved\\' + game.name + strftime("%Y-%m-%d-", gmtime()) + str(np.random.randint(10000))
+    filename = 'saved\\' + game.name + \
+        strftime("%Y-%m-%d-", gmtime()) + str(np.random.randint(10000))
     print("Parallel simulations: ", num_simulations)
     print("Total number of episodes: ", num_simulations * num_episodes)
 
@@ -157,11 +159,11 @@ if __name__ == "__main__":
         new_process.start()
 
     # UNCOMMENT THIS for testing manually
-    #tasks.put(1)
+    # tasks.put(1)
     #simulation(results, tasks, render=True, main_player= partial(ai_move, ai), opponent=manual_move, save_episodes=True)
 
     # UNCOMMENT THIS for testing the ELO rating
-    #tasks.put(100)
+    # tasks.put(100)
     #print("ELO rating against random: ", elo_rating(results, tasks, partial(ai_move, ai)))
 
     # Set process for training the network
@@ -174,9 +176,9 @@ if __name__ == "__main__":
         num_finished_simulations = 0
         memory = []
 
-         # progressbar
-        bar = progressbar.ProgressBar(maxval= total_episodes, \
-        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        # progressbar
+        bar = progressbar.ProgressBar(maxval=total_episodes,
+                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
 
         while True:
