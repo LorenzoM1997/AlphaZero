@@ -1,25 +1,27 @@
 import numpy as np
 from copy import deepcopy
 
+
 def get_set_generic(name):
     return property(lambda self: getattr(self.game, name),
                     lambda self, val: setattr(self.game, name, val))
 
+
 class GameGlue:
 
-    num_rows = get_set_generic('num_rows') 
-    num_cols = get_set_generic('num_cols') 
-    num_layers = get_set_generic('num_layers') 
-    action_space = get_set_generic('action_space') 
-    obs_space = get_set_generic('obs_space') 
-    terminal = get_set_generic('terminal') 
-    name = get_set_generic('name') 
+    num_rows = get_set_generic('num_rows')
+    num_cols = get_set_generic('num_cols')
+    num_layers = get_set_generic('num_layers')
+    action_space = get_set_generic('action_space')
+    obs_space = get_set_generic('obs_space')
+    terminal = get_set_generic('terminal')
+    name = get_set_generic('name')
     board = get_set_generic('board')
 
     def __init__(self, game):
         self.game = game
         self.last_state = None
-        self.ended = 0 
+        self.ended = 0
 
     @property
     def state(self):
@@ -45,9 +47,6 @@ class GameGlue:
         self.game.restart()
         self.last_state = None
         self.ended = 0
-
-    def is_valid(self, action):
-        return self.game.is_valid(action)
 
     def legal_moves(self):
         return self.game.legal_moves()
@@ -92,4 +91,3 @@ class GameGlue:
             return 0
         else:
             return -1
-

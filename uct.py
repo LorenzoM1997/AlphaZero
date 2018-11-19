@@ -70,7 +70,7 @@ class UCT(object):
             print("Maximum depth searched:", self.max_depth)
             for m in self.data['actions']:
                 print(self.action_template.format(**m))
-        
+
         # return mcts policy
         self.policy = np.zeros(len(self.board.action_space))
         for m in self.data['actions']:
@@ -94,7 +94,8 @@ class UCT(object):
         expand = True
         for t in range(1, self.max_actions + 1):
             legal = self.board.legal_actions(history_copy[-1])
-            actions_states = [(p, self.board.next_state(state, p)) for p in legal]
+            actions_states = [(p, self.board.next_state(state, p))
+                              for p in legal]
 
             if all(S in stats for p, S in actions_states):
                 # If we have stats on all of the legal actions here, use UCB1.
@@ -134,6 +135,7 @@ class UCT(object):
             S = stats[state]
             S.visits += 1
             S.value += end_values * multiplier
+
 
 class UCTValues(UCT):
     action_template = "{action}: {average:.1f} ({sum} / {plays})"
