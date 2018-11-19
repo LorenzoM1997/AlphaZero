@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, kernel_size = 3, filters=32, strides=1, padding="SAME", batch_size=128, train_steps=500):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, kernel_size = 3, filters=32, strides=1, padding="SAME"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -16,8 +16,6 @@ class NN():
             filters (int): num features in output of convolution
             strides (int tuple/list or int): Stride of convolution
             padding ("SAME" or "valid"): "SAME" if 0 adding added during convolution
-            batch_size (int): Default 128, batch size in one training step
-            train_steps (int): Default = 500, training iterations
         """
         self.lr = lr
         self.input_dim = input_dim
@@ -25,13 +23,12 @@ class NN():
         self.filters = filters
         self.strides = [1, strides, strides, 1]
         self.padding = padding
-        self.training = training
-        self.batch_size = batch_size
         self.kernel_size = kernel_size
         self.policy_head_dim = policy_head_dim
 
         self.inputs = tf.placeholder(tf.float32, shape=np.append(
             None, input_dim).tolist())  # Variable batch size
+        self.training = tf.placeholder(tf.bool)
         self.policy_label = tf.placeholder(tf.float32,
                                            shape=np.append(None, policy_head_dim.shape).tolist())
         self.value_label = tf.placeholder(tf.float32, [None, 1])
@@ -40,7 +37,6 @@ class NN():
         self.policy_head = self._build_policy_head()
         self.ce_loss = self._cross_entropy_with_logits()
         self.mse_loss = self._mean_sq_error()
-        self.train_steps = train_steps
 
     def _build_hidden_layers(self):
         """
@@ -159,14 +155,18 @@ class NN():
     def _mean_sq_error(self):
         return tf.losses.mean_squared_error(self.value_label, self.value_head)
 
-    def getBatch(self, X, train_steps, batch_size, value_labels, policy_labels):
-        """
-        args:
+    def getBatch(self, X, train_step, batch_size, value_labels, policy_labels):
+        """ Set batch size for each training step
+        Args:
             value_labels
             policy_labels
+        Return:
+            batch_X: predictors in assigned batch size
+            batch_Y: value labels in training
+            batch_Z: policy labels in training
         """
         sample_size = X.shape[0]
-        startIndex = (train_steps * batch_size) % sample_size
+        startIndex = (train_step * batch_size) % sample_size
         endIndex = startIndex + batch_size % sample_size
         if startIndex < endIndex:
             batch_X = X[startIndex: endIndex]
@@ -185,34 +185,37 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-    def fit(self, X, v_lab, p_lab, batch_size,
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000
             opimizer='AdamOptimizer', saver_path='./model/checkpoint/model.ckpt'):
         """
         Args:
             X: input
             v_lab: value label
             p_lab: policy label
+
         """
-        init = tf.global_variables_initializer()
-
         self.loss = self.ce_loss + self.mse_loss
-
         if optimizer == 'AdamOptimizer':
             train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
         if optimizer == 'GradientDescentOptimizer':
             train_step = tf.train.GradientDescentOptimizer(
                 lr).minimize(self.loss)
+        train_iterations = math.cell(X.shape[0]*epoch/batch_size)
 
+        init = tf.global_variables_initializer()
         saver = tf.train.Saver()
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
 
-        with tf.Session(config=config) as sess:
+        #if gpu
+        # config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        #with tf.Session(config=config) as sess:
+
+        with tf.Session() as sess:
             sess.run(init)
-            for step in range(self.train_steps):
-                [batch_X, batch_Y, batch_Z] = getBatch(
-                    X, step, self.batch_size, value_labels, policy_labels)
-                train_step.run(feed_dict={X: batch_X, Y: batch_Y, Z: batich_Z})
+            for step in range(train_iterations):
+                [batch_X, batch_Y, batch_Z] = self.getBatch(
+                    X, step, batch_size, v_lab, p_lab)
+                train_step.run(feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batich_Z, self.training: True})
 
             saved_path = saver.save(sess, saver_path)
         return None
@@ -221,17 +224,21 @@ class NN():
         meta_path = saver_path+'.meta'
         model_path = saver_path
         saver = tf.train.import_meta_graph(meta_path)
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        with tf.Session(config=config) as sess:
+
+        #if gpu
+        # config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        #with tf.Session(config=config) as sess:
+
+        with tf.Session() as sess:
             saver.restore(sess, model_path)
             graph = tf.get_default_graph()
             value_prob_op = graph.get_operation_by_name('value_head')
             value_pred = graph.get_tensor_by_name('value_head:0')
-            vh_pred = sess.run(value_pred, feed_dict={X: new_input})
+            vh_pred = sess.run(value_pred, feed_dict={self.inputs: new_input, self.training: False})
             policy_prob_op = graph.get_operation_by_name('policy_head')
             policy_pred = graph.get_tensor_by_name('policy_head:0')
-            ph_pred = sess.run(policy_pred, feed_dict={X: new_input})
+            ph_pred = sess.run(policy_pred, feed_dict={self.inputs: new_input, self.training: False})
             ph_pred = tf.argmax(ph_pred, axis=1)
             pred = [vh_pred, ph_pred]
         return pred
