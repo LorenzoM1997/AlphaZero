@@ -46,9 +46,6 @@ class GameGlue:
         self.last_state = None
         self.ended = 0
 
-    def is_valid(self, action):
-        return self.game.is_valid(action)
-
     def legal_moves(self):
         return self.game.legal_moves()
 

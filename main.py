@@ -36,7 +36,7 @@ def manual_move():
     global game
     try:
         action = int(input())
-    except BaseException:
+    except:
         print("enter a number")
         action = -1
     while action not in game.legal_moves():
