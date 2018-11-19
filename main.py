@@ -1,8 +1,10 @@
 from functools import partial
 import Games
+import UI
 from Games.TicTacToe import TicTacToe
 from Games.ConnectFour import ConnectFour
 from GameGlue import GameGlue
+from UI.GameDisplay import DisplayMain
 import multiprocessing
 import numpy as np
 import pickle
@@ -123,7 +125,7 @@ if __name__ == "__main__":
     ai_old = uct.UCTValues(game)
 
     # variables
-    render_game = False
+    render_game = True
     save_episodes = True
     num_episodes = 25
     episode_to_save = 5
@@ -132,6 +134,7 @@ if __name__ == "__main__":
         strftime("%Y-%m-%d-", gmtime()) + str(np.random.randint(10000))
     print("Parallel simulations: ", num_simulations)
     print("Total number of episodes: ", num_simulations * num_episodes)
+
 
     # calculate total number of episodes
     total_episodes = num_simulations * num_episodes
@@ -193,6 +196,9 @@ if __name__ == "__main__":
             memory.append(new_result)
             num_finished_simulations += 1
             bar.update(num_finished_simulations)
+
+            if render_game:
+                DisplayMain(new_result, game_interface.name)
 
             if num_finished_simulations == total_episodes:
                 pickle.dump(memory, open(filename, "wb"))
