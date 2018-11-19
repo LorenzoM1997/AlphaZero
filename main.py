@@ -3,6 +3,7 @@ import Games
 from Games.TicTacToe import TicTacToe
 from Games.ConnectFour import ConnectFour
 from GameGlue import GameGlue
+from GameDisplay import DisplayMain
 import multiprocessing
 import numpy as np
 import pickle
@@ -191,6 +192,9 @@ if __name__ == "__main__":
             memory.append(new_result)
             num_finished_simulations += 1
             bar.update(num_finished_simulations)
+
+            if render_game:
+                DisplayMain(new_result)
 
             if num_finished_simulations == total_episodes:
                 pickle.dump(memory, open(filename, "wb"))
