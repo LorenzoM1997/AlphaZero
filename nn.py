@@ -185,8 +185,8 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000
-            opimizer='AdamOptimizer', saver_path='./model/checkpoint/model.ckpt'):
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000,
+            optimizer='AdamOptimizer', saver_path='./model/checkpoint/model.ckpt'):
         """
         Args:
             X: input
