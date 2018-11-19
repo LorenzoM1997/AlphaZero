@@ -18,7 +18,7 @@ def load_data_for_training(game):
 
     mypath = 'saved'
     # list of files
-    files = find('TicTacToe*', mypath)
+    files = find(game.name + '*', mypath)
 
     X = []  # where input (board state) will be saved
     V = []  # where the value (one of labels) will be saved

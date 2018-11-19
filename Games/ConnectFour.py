@@ -1,6 +1,7 @@
 import numpy as np
 from Games.Games import Game
 
+
 class ConnectFour(Game):
 
     def __init__(self):
@@ -20,11 +21,7 @@ class ConnectFour(Game):
             return False
 
     def legal_moves(self):
-        legal_moves = []
-        for action in self.action_space:
-            if self.board[0, action] == 0:
-                legal_moves.append(action)
-        return legal_moves
+        return np.where(self.board[0] == 0)[0].tolist()
 
     def invert_board(self):
         self.board = (3 - self.board) % 3
@@ -45,9 +42,6 @@ class ConnectFour(Game):
         row_index = (self.board[:, col_index] != 0).argmax(
             axis=0) - 1  # subtract one from index of top filled space
         self.board[row_index][col_index] = 1
-
-        # undecided
-        terminal = 1
 
         # to check for 4 in a row horizontal
         a = 0
@@ -100,10 +94,7 @@ class ConnectFour(Game):
             col -= 1
 
         # checks if board is filled completely
-        if np.any(self.board == 0):
-            terminal = 0
-
-        if terminal == 1:
+        if not np.any(self.board == 0):
             self.terminal = True
 
         return 0
@@ -123,4 +114,3 @@ class ConnectFour(Game):
                 else:
                     print(' O |', end="")
         print('\n')
-

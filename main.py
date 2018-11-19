@@ -14,14 +14,12 @@ from training import load_data_for_training
 import uct
 
 # change the following line to change game
-game_interface = TicTacToe()
+game_interface = ConnectFour()
 game = GameGlue(game_interface)
 
 def random_move():
     global game
-    action = np.random.choice(game.action_space)
-    while not game.is_valid(action):
-        action = np.random.choice(game.action_space)
+    action = np.random.choice(game.legal_moves())
     return [action, np.zeros(len(game.action_space))]
 
 
@@ -41,7 +39,7 @@ def manual_move():
     except BaseException:
         print("enter a number")
         action = -1
-    while not game.is_valid(action):
+    while action not in game.legal_moves():
         try:
             action = int(input())
         except BaseException:
@@ -126,10 +124,12 @@ if __name__ == "__main__":
     # variables
     render_game = False
     save_episodes = True
-    num_episodes = 5
-    episode_to_save = 10
+    num_episodes = 25
+    episode_to_save = 5
     num_simulations = 4
     filename = 'saved\\' + game.name + strftime("%Y-%m-%d-", gmtime()) + str(np.random.randint(10000))
+    print("Parallel simulations: ", num_simulations)
+    print("Total number of episodes: ", num_simulations * num_episodes)
 
     # calculate total number of episodes
     total_episodes = num_simulations * num_episodes

@@ -1,6 +1,7 @@
 import numpy as np
 from Games.Games import Game
 
+
 class TicTacToe(Game):
     def __init__(self):
         self.board = np.zeros((3, 3), dtype=np.uint8)
@@ -29,7 +30,7 @@ class TicTacToe(Game):
         return:
             legal_moves(list): a list with all the legal moves from the current position
         """
-        flat_board = np.reshape(self.board,(9))
+        flat_board = np.reshape(self.board, (9))
         return np.where(flat_board == 0)[0].tolist()
 
     def invert_board(self):
@@ -57,7 +58,7 @@ class TicTacToe(Game):
             return + 1
 
         # to check for 3 in a row vertical
-        if np.all(self.board[:,col_index] == 1):
+        if np.all(self.board[:, col_index] == 1):
             self.terminal = True
             return +1
 
