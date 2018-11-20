@@ -21,7 +21,8 @@ class UCT(object):
 
         self.max_depth = 0
         self.data = {}
-        self.DEBUG = False
+        self.DEBUG = True
+        self.memorize = True
 
         self.calculation_time = float(kwargs.get('time', 10))
         self.max_actions = int(kwargs.get('max_actions', 1000))
@@ -39,7 +40,14 @@ class UCT(object):
 
         self.max_depth = 0
         self.data = {}
-        self.stats.clear()
+        if self.memorize:
+            try:
+                current_stats = self.stats[self.history[-1]]
+                games = current_stats.visits
+            except:
+                games = 0
+        else:
+            self.stats.clear()
 
         state = self.history[-1]
         legal = self.board.legal_actions(state)
@@ -50,13 +58,12 @@ class UCT(object):
         if len(legal) == 1:
             return legal[0]
 
-        games = 0
         begin = time.time()
         while time.time() - begin < self.calculation_time:
-            self.run_simulation()
-            games += 1
             if games >= 1600:
                 break
+            self.run_simulation()
+            games += 1  
 
         # Display the number of calls of `run_simulation` and the
         # time elapsed.
