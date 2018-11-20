@@ -207,7 +207,7 @@ class NN():
             train_step = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
         if optimizer == 'GradientDescentOptimizer':
             train_step = tf.train.GradientDescentOptimizer(self.lr).minimize(self.loss)
-        train_iterations = math.cell(X.shape[0]*epoch/batch_size)
+        train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
         saver = tf.train.Saver()
@@ -222,7 +222,7 @@ class NN():
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
                     X, step, batch_size, v_lab, p_lab)
-                train_step.run(feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batich_Z, self.training: True})
+                train_step.run(feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batch_Z, self.training: True})
 
             saved_path = saver.save(sess, saver_path)
         return None

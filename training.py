@@ -3,7 +3,7 @@ import os
 import pickle
 import tensorflow as tf
 from nn import *
-from Games.Games import *
+from Games.Games import Game
 from Games.TicTacToe import *
 from nn import NN
 
@@ -22,8 +22,8 @@ def load_data_for_training(game):
     # list of files
     files = find(game.name + '*', mypath)
 
-    X = []  # where input (board state) will be saved
-    V = []  # where the value (one of labels) will be saved
+    X = np.empty((0, game.num_layers, game.num_rows, game.num_cols))  # where input (board state) will be saved
+    V = np.empty((0, 1))  # where the value (one of labels) will be saved
     P = []  # where the policy (one of the labels) will be saved
 
     for file in files:
@@ -35,14 +35,22 @@ def load_data_for_training(game):
             print("Data not found in ", file)
             continue
 
+        X_file = np.empty((0, game.num_layers, game.num_rows, game.num_cols))
+        V_file = np.empty((0, 1))
         for episode in data:
-            for step in episode:
-                game.board = step[0]
-                layers = game.layers()
-                X.append(layers)
-                V.append(step[1])
-                P.append(step[2])
+            X_episode = np.empty((len(episode), game.num_layers, game.num_rows, game.num_cols))
+            V_episode = np.empty((len(episode), 1))
+            for i in range(len(episode)):
+                game.board = episode[i][0]
+                X_episode[i] = game.layers() 
+                P.append(episode[i][1])
+                V_episode[i] = episode[i][2]
 
+            X_file = np.append(X_file, X_episode, axis = 0)
+            V_file = np.append(V_file, V_episode, axis = 0)
+
+        X = np.append(X, X_file, axis = 0)
+        V = np.append(V, V_file, axis = 0)
         print("Correctly loaded: ", file)
 
     print("Episodes in data_set:", len(V))
