@@ -57,12 +57,12 @@ def training_nn(game, nnet):
     """
     X, V, P = load_data_for_training(game)
     model_path = './model/checkpoint/' + 'model.ckpt'
-    #nnet.fit(self, X, V, P, 32, saver_path = model_path)
+    nnet.fit(X, V, P, 32, saver_path = model_path)
 
 
 if __name__ == "__main__":
     # IMPORTANT game definition
     game = TicTacToe()
     input_shape = game.layers().shape
-    nnet = NN(input_shape, 5, game.action_space, True)
-    training_nn(game, 1)
+    nnet = NN(input_shape, 5, len(game.action_space), True)
+    training_nn(game, nnet)

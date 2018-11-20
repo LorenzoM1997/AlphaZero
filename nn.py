@@ -30,7 +30,7 @@ class NN():
             None, input_dim).tolist())  # Variable batch size
         self.training = tf.placeholder(tf.bool)
         self.policy_label = tf.placeholder(tf.float32,
-                                           shape=np.append(None, policy_head_dim.shape).tolist())
+                                           shape=np.append(None, policy_head_dim).tolist())
         self.value_label = tf.placeholder(tf.float32, [None, 1])
         self.hidden_layers = self._build_hidden_layers()
         self.value_head = self._build_value_head()
@@ -112,7 +112,7 @@ class NN():
             units=self.policy_head_dim,
             use_bias=False,
             activation=tf.nn.tanh,
-            name='value_head'
+            name='policy_head'
         )
         return ph_dense
 
@@ -156,7 +156,7 @@ class NN():
         return y
 
     def _cross_entropy_with_logits(self):
-        loss = tf.nn.softmax_cross_entropy_with_logits(
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(
             logits=self.policy_head, labels=self.policy_label)
         return tf.reduce_mean(loss)
 
@@ -204,10 +204,9 @@ class NN():
         """
         self.loss = self.ce_loss + self.mse_loss
         if optimizer == 'AdamOptimizer':
-            train_step = tf.train.AdamOptimizer(lr).minimize(self.loss)
+            train_step = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
         if optimizer == 'GradientDescentOptimizer':
-            train_step = tf.train.GradientDescentOptimizer(
-                lr).minimize(self.loss)
+            train_step = tf.train.GradientDescentOptimizer(self.lr).minimize(self.loss)
         train_iterations = math.cell(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
