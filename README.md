@@ -11,7 +11,6 @@ Some packages require an older version of python installed (particularly tensorf
 Everyone should have installed:
 
     pip install tensorflow
-    pip install numpy
     pip install autopep8
     pip install progressbar2
 
@@ -19,6 +18,8 @@ If you have a Nvidia gpu, you should try to install the gpu version of tensorflo
 
     pip install tensorflow-gpu
 and all the related requirements, such as Cuda and CuDnn.
+
+Before running the program, create an empty folder named 'saved'.
 
 ## Uploads
 
