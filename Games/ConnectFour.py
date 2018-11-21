@@ -8,7 +8,7 @@ class ConnectFour(Game):
         self.board = np.zeros((6, 7), dtype=np.uint8)
         self.search_time = 8
         action_space = np.arange(0, 7)
-        super().__init__(6, 7, 3, action_space, 'ConnectFour')
+        super().__init__(6, 7, 2, action_space, 'ConnectFour')
 
     def restart(self):
         super().restart()

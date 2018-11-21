@@ -7,6 +7,8 @@ from Games.Games import Game
 from Games.TicTacToe import *
 from nn import NN
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 
 def find(pattern, path):
     result = []

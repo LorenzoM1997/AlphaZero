@@ -7,7 +7,7 @@ class TicTacToe(Game):
         self.board = np.zeros((3, 3), dtype=np.uint8)
         self.search_time = 4
         action_space = np.arange(0, 9)
-        super().__init__(3, 3, 3, action_space, 'TicTacToe')
+        super().__init__(3, 3, 2, action_space, 'TicTacToe')
 
     def restart(self):
         super().restart()

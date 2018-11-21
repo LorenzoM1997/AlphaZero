@@ -34,10 +34,7 @@ class Game:
         layers = np.zeros((self.num_layers, self.num_rows,
                            self.num_cols), dtype=np.uint8)
         for k in range(self.num_layers):
-            for i in range(self.num_rows):
-                for j in range(self.num_cols):
-                    if self.board[i][j] == k:
-                        layers[k][i][j] = 1
+            layers[k] = np.isin(self.board, k + 1)
         return layers
 
     def restart(self):
