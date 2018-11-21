@@ -27,11 +27,15 @@ def random_move():
 
 
 def epsilon_greedy(greedy_move):
-    epsilon = 0.1
-    if random.random() < 0.1:
+    epsilon = 0.05
+    if random.random() < epsilon:
         action, policy = random_move()
     else:
-        action, policy = greedy_move()
+        try:
+            action, policy = greedy_move()
+        except:
+            action = greedy_move()
+            policy = -1
     return [action, policy]
 
 
@@ -45,17 +49,25 @@ def manual_move():
     while action not in game.legal_moves():
         try:
             action = int(input())
-        except BaseException:
+        except:
             print("enter a number")
             action = -1
     return [action, np.zeros(len(game.action_space))]
 
 
-def ai_move(ai):
+def ai_move(ai, mode='training'):
     global game
     ai.update(game.state)
-    action = ai.get_action()
-    policy = ai.policy
+    if mode == 'training':
+        #  during training we are using some randomization
+        action, policy = epsilon_greedy(ai.get_action)
+        if policy == -1:
+            # overwrite the policy if it didn't make a random move
+            policy = ai.policy
+    else:
+        #  in evaluation we are taking the greedy action
+        action = ai.get_action()
+        policy = ai.policy
     return [action, policy]
 
 
@@ -71,7 +83,7 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
 
     for i in range(n_episodes):
 
-        # restart the game
+        #  restart the game
         game.restart()
         episode = []
         player = i % 2
@@ -81,7 +93,7 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
             if render:
                 game_interface.render()
 
-            # collect observations
+            #  collect observations
             if player:
                 action, policy = main_player()
             else:
@@ -92,7 +104,7 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
                 episode.append(tuple)
             reward = game.step(action)
 
-            # now will be the turn of the other player
+            #  now will be the turn of the other player
             game.invert_board()
             player = (player + 1) % 2
 
@@ -103,6 +115,7 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
                 total_reward -= reward
 
         if save_episodes:
+            #  backpropagate the reward
             for i in range(len(episode)):
                 episode[len(episode) - i - 1][2] = reward
                 reward = reward * (-1)
@@ -124,20 +137,56 @@ if __name__ == "__main__":
     ai = uct.UCTValues(game)
     ai_old = uct.UCTValues(game)
 
-    # variables
-    render_game = True
-    save_episodes = True
-    num_episodes = 25
-    episode_to_save = 5
-    num_simulations = 4
-    filename = 'saved\\' + game.name + \
-        strftime("%Y-%m-%d-", gmtime()) + str(np.random.randint(10000))
-    print("Parallel simulations: ", num_simulations)
-    print("Total number of episodes: ", num_simulations * num_episodes)
+    #  modes: 'training', 'manual', 'debug'
+    mode = 'debug'
 
+    if mode == 'training':
+        render_game = False
+        num_episodes = 25
+        num_simulations = 4
+        episode_to_save = 5
+        save_episodes = True
+        ai.DEBUG = False
+        ai_old.DEBUG = False
 
-    # calculate total number of episodes
-    total_episodes = num_simulations * num_episodes
+        print("Mode: training.")
+        print("Parallel simulations: ", num_simulations)
+        print("Total number of episodes: ", num_simulations * num_episodes)
+
+        total_episodes = num_simulations * num_episodes  # total number of episodes
+
+        try:
+            #  file where the episodes are saved
+            filename = 'saved\\' + game.name + \
+                strftime("%Y-%m-%d-", gmtime()) + \
+                str(np.random.randint(100000))
+        except:
+            print("Directory not found")
+            exit()
+
+    elif mode == 'manual':
+        render_game = True
+        num_simulations = 0
+        num_episodes = 10
+        save_episodes = False
+        ai.DEBUG = False
+
+        print("Mode: manual.")
+
+    elif mode == 'debug':
+        render_game = True
+        num_simulations = 1
+        num_episodes = 25
+        save_episodes = False
+        ai.DEBUG = True
+
+        print("Mode: debug.")
+        print("Parallel simulations: ", num_simulations)
+        print("Total number of episodes: ", num_simulations * num_episodes)
+
+    else:
+        print("mode name not recognized.")
+        exit()
 
     # Define IPC manager
     manager = multiprocessing.Manager()
@@ -161,10 +210,6 @@ if __name__ == "__main__":
         processes.append(new_process)
         new_process.start()
 
-    # UNCOMMENT THIS for testing manually
-    # tasks.put(1)
-    #simulation(results, tasks, render=True, main_player= partial(ai_move, ai), opponent=manual_move, save_episodes=True)
-
     # UNCOMMENT THIS for testing the ELO rating
     # tasks.put(100)
     #print("ELO rating against random: ", elo_rating(results, tasks, partial(ai_move, ai)))
@@ -174,33 +219,47 @@ if __name__ == "__main__":
         target=load_data_for_training, args=(game_interface,))
     processes.append(new_process)
     new_process.start()
+    if mode == 'manual':
+        #  testing manually
+        tasks.put(1)
+        simulation(results, tasks, render=True, main_player=partial(
+            ai_move, ai), opponent=manual_move, save_episodes=save_episodes)
 
-    if save_episodes:
+    elif mode == 'debug':
+
+        while True:
+            # Read result
+            new_result = results.get()
+
+    elif mode == 'training':
         num_finished_simulations = 0
         memory = []
 
-        # progressbar
+        #  start the progressbar
         bar = progressbar.ProgressBar(maxval=total_episodes,
                                       widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
 
         while True:
 
-            # save memory every 10 episodes
+            # save memory every n episodes
             if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
                 pickle.dump(memory, open(filename, "wb"))
 
             # Read result
             new_result = results.get()
+
             # Save in list
             memory.append(new_result)
             num_finished_simulations += 1
             bar.update(num_finished_simulations)
 
             if render_game:
+                #  call the UI appropiate for the game
                 DisplayMain(new_result, game_interface.name)
 
             if num_finished_simulations == total_episodes:
+                #  when all the simulations are completed save and exit
                 pickle.dump(memory, open(filename, "wb"))
                 break
 
