@@ -6,7 +6,7 @@ import math
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.001, kernel_size = 3, filters=32, strides=1, padding="SAME"):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -156,7 +156,7 @@ class NN():
         return y
 
     def _cross_entropy_with_logits(self):
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(
             logits=self.policy_head, labels=self.policy_label)
         return tf.reduce_mean(loss)
 
@@ -202,7 +202,13 @@ class NN():
             p_lab: policy label
 
         """
-        self.loss = self.ce_loss + self.mse_loss
+        self.loss = self.mse_loss + self.ce_loss
+
+        # create summary for loss
+        tf.summary.scalar('loss', tf.reduce_mean(self.loss))
+        tf.summary.scalar('mse', tf.reduce_mean(self.mse_loss))
+        tf.summary.scalar('cross_entropy', tf.reduce_mean(self.ce_loss))
+
         if optimizer == 'AdamOptimizer':
             train_step = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
         if optimizer == 'GradientDescentOptimizer':
@@ -219,10 +225,16 @@ class NN():
 
         with tf.Session() as sess:
             sess.run(init)
+
+            # write summaries to file
+            merged = tf.summary.merge_all()
+            train_writer = tf.summary.FileWriter('graphs', sess.graph)
+
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
                     X, step, batch_size, v_lab, p_lab)
-                train_step.run(feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batch_Z, self.training: True})
+                _, summary_fit = sess.run([train_step, merged], feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batch_Z, self.training: True})
+                train_writer.add_summary(summary_fit, step)
 
             saved_path = saver.save(sess, saver_path)
         return None
