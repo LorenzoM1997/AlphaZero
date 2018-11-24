@@ -37,6 +37,39 @@ class NN():
         self.policy_head = self._build_policy_head()
         self.ce_loss = self._cross_entropy_with_logits()
         self.mse_loss = self._mean_sq_error()
+        self.train_op = self.train()
+
+    def create_directory(self,model_saver_path = './models/checkpoint/model.ckpt',
+            final_model_saver_path='./model/checkpoint/model.ckpt', summary_path='./model/summary/'):
+        """ create directories to store checkpoint files
+        Args:
+            model_saver_path: path for storing models obtained during training process
+            final_model_saver_path: path for final mdoel
+            summary_path: path for storing summaries of loss
+        """
+        globel_path = os.getcwd()
+        globel_final_model_saver_path = os.path.join(globel_path, final_model_saver_path)
+        global_model_saver_path = os.path.join(globel_path, model_saver_path)
+        globel_summary_path = os.path.join(globel_path, summary_path)
+        if os.path.exists(globel_final_model_saver_path):
+            shutil.rmtree(globel_final_model_saver_path)
+            os.mkdir(globel_final_model_saver_path)
+        else:
+            os.mkdir(globel_final_model_saver_path)
+
+        if os.path.exists(global_model_saver_path):
+            shutil.rmtree(global_model_saver_path)
+            os.mkdir(global_model_saver_path)
+        else:
+            os.mkdir(global_model_saver_path)
+
+        if os.path.exists(globel_summary_path):
+            shutil.rmtree(globel_summary_path)
+            os.mkdir(globel_summary_path)
+        else:
+            os.mkdir(globel_summary_path)
+
+        return None
 
     def _build_hidden_layers(self):
         """
@@ -193,24 +226,48 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000,
-            optimizer='AdamOptimizer', saver_path='./model/checkpoint/model.ckpt'):
+     def train(self, opt_type='AdamOptimizer'):
+        """declare optimal method and add training layer to graph
+        Args:
+            opt_type:optimizing algorithm, sgd or adam
+        Return:
+            training graph
         """
+        self.loss = self.ce_loss + self.mse_loss
+
+        tf.summary.scalar('ce_loss', self.ce_loss)
+        tf.summary.scalar('mse_loss', self.mse_loss)
+        tf.summary.scalar('total_loss', self.loss)
+
+        if opt_type == 'AdamOptimizer':
+            optimizer = tf.train.AdamOptimizer(self.lr)
+        else:
+            optimizer = tf.train.GradientDescentOptimizer(self.lr)
+
+        apply_gradient_op = optimizer.minimize(self.loss)
+
+        return apply_gradient_op
+
+
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = './models/checkpoint/model.ckpt',
+            final_model_saver_path='./model/checkpoint/model.ckpt', summary_path='./model/summary/'):
+        """training model and save
         Args:
             X: input
             v_lab: value label
             p_lab: policy label
-
+            batch_size: batch size for training data in every iteration
+            epoch: training epochs
+            model_saver_path: path for storing models obtained during training process
+            final_model_saver_path: path for final mdoel
+            summary_path: path for storing summaries of loss
         """
-        self.loss = self.ce_loss + self.mse_loss
-        if optimizer == 'AdamOptimizer':
-            train_step = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
-        if optimizer == 'GradientDescentOptimizer':
-            train_step = tf.train.GradientDescentOptimizer(self.lr).minimize(self.loss)
-        train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
+
+        train_iterations = math.cell(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
         saver = tf.train.Saver()
+        summary_op = tf.summary.merge_all()
 
         #if gpu
         # config = tf.ConfigProto()
@@ -218,18 +275,35 @@ class NN():
         #with tf.Session(config=config) as sess:
 
         with tf.Session() as sess:
+            # Initialize session.
             sess.run(init)
+
+            # Initialize summary writer.
+            summary_writer = tf.summary.Filewriter(summary_path, graph=sess.graph)
+
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
                     X, step, batch_size, v_lab, p_lab)
-                train_step.run(feed_dict={self.inputs: batch_X, self.value_label: batch_Y, self.policy_label: batch_Z, self.training: True})
 
-            saved_path = saver.save(sess, saver_path)
+                feed_dict = {self.inputs: batch_X, 
+                             self.value_label: batch_Y, 
+                             self.policy_label: batich_Z, 
+                             self.training: True}
+
+                sess.run(self.train_op, feed_dict=feed_dict)
+
+                if step % 20 == 0:
+                    summary_str = sess.run(summary_op, feed_dict=feed_dict)
+                    summary_writer.add_summary(summary_str, step)
+                if step % 1000 == 0:#store model every 1000 iteration times, may be changed due to # of network parameters
+                    saver.save(sess, model_saver_path, global_step=step)
+
+            saver.save(sess, final_model_saver_path)
         return None
 
-    def pred(new_input, saver_path='./model/checkpoint/model.ckpt'):
-        meta_path = saver_path+'.meta'
-        model_path = saver_path
+    def pred(new_input, final_model_saver_path='./model/checkpoint/model.ckpt'):
+        meta_path = final_model_saver_path+'.meta'
+        model_path = final_model_saver_path
         saver = tf.train.import_meta_graph(meta_path)
 
         #if gpu
@@ -249,3 +323,4 @@ class NN():
             ph_pred = tf.argmax(ph_pred, axis=1)
             pred = [vh_pred, ph_pred]
         return pred
+
