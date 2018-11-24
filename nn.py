@@ -226,7 +226,7 @@ class NN():
 
         return batch_X, batch_Y, batch_Z
 
-     def train(self, opt_type='AdamOptimizer'):
+    def train(self, opt_type='AdamOptimizer'):
         """declare optimal method and add training layer to graph
         Args:
             opt_type:optimizing algorithm, sgd or adam
@@ -249,7 +249,7 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = './models/checkpoint/model.ckpt',
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = './model/checkpoint/model.ckpt',
             final_model_saver_path='./model/checkpoint/model.ckpt', summary_path='./model/summary/'):
         """training model and save
         Args:
@@ -263,7 +263,7 @@ class NN():
             summary_path: path for storing summaries of loss
         """
 
-        train_iterations = math.cell(X.shape[0]*epoch/batch_size)
+        train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
         saver = tf.train.Saver()
@@ -279,7 +279,7 @@ class NN():
             sess.run(init)
 
             # Initialize summary writer.
-            summary_writer = tf.summary.Filewriter(summary_path, graph=sess.graph)
+            summary_writer = tf.summary.FileWriter(summary_path, graph=sess.graph)
 
 
             for step in range(train_iterations):
@@ -288,7 +288,7 @@ class NN():
 
                 feed_dict = {self.inputs: batch_X, 
                              self.value_label: batch_Y, 
-                             self.policy_label: batich_Z, 
+                             self.policy_label: batch_Z, 
                              self.training: True}
 
                 sess.run(self.train_op, feed_dict=feed_dict)

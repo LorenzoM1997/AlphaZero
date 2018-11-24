@@ -67,7 +67,7 @@ def training_nn(game, nnet):
     """
     X, V, P = load_data_for_training(game)
     model_path = './model/checkpoint/' + 'model.ckpt'
-    nnet.fit(X, V, P, 32, saver_path = model_path)
+    nnet.fit(X, V, P, 64)
 
 
 if __name__ == "__main__":

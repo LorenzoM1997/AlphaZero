@@ -3,3 +3,5 @@
 .vs/AlphaZero/v15/.suo
 *.sln
 *.pyc
+*.meta
+*.index
