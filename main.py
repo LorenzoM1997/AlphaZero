@@ -7,11 +7,13 @@ from GameGlue import GameGlue
 from UI.GameDisplay import DisplayMain
 import multiprocessing
 import numpy as np
+from nn import NN
 import pickle
 import progressbar
 import random
 import tensorflow as tf
 from time import sleep, strftime, gmtime
+from training import training_nn
 from training import load_data_for_training
 import uct
 
@@ -137,8 +139,14 @@ if __name__ == "__main__":
     ai = uct.UCTValues(game)
     ai_old = uct.UCTValues(game)
 
+    residual_layers = 5
+    input_shape = game_interface.layers().shape
+    policy_shape = len(game_interface.action_space)
+    nnet_1 = NN(input_shape, residual_layers, policy_shape, True)
+    nnet_2 = NN(input_shape, residual_layers, policy_shape, True)
+
     #  modes: 'training', 'manual', 'debug'
-    mode = 'debug'
+    mode = 'training'
 
     if mode == 'training':
         render_game = False
@@ -179,6 +187,7 @@ if __name__ == "__main__":
         num_episodes = 25
         save_episodes = False
         ai.DEBUG = True
+        ai_old.DEBUG = True
 
         print("Mode: debug.")
         print("Parallel simulations: ", num_simulations)
@@ -195,30 +204,10 @@ if __name__ == "__main__":
     tasks = manager.Queue()
     results = manager.Queue()
 
-    # Create process pool with two processes
-    num_processes = 1 + num_simulations
-    pool = multiprocessing.Pool(processes=num_processes)
-    processes = []
-
-    for i in range(num_simulations):
-        tasks.put(num_episodes)
-
-    for i in range(num_simulations):
-        # Initiate the worker processes for simulation
-        new_process = multiprocessing.Process(target=simulation, args=(
-            results, tasks, partial(ai_move, ai), partial(ai_move, ai_old), render_game, save_episodes,))
-        processes.append(new_process)
-        new_process.start()
-
     # UNCOMMENT THIS for testing the ELO rating
     # tasks.put(100)
     #print("ELO rating against random: ", elo_rating(results, tasks, partial(ai_move, ai)))
 
-    # Set process for training the network
-    new_process = multiprocessing.Process(
-        target=load_data_for_training, args=(game_interface,))
-    processes.append(new_process)
-    new_process.start()
     if mode == 'manual':
         #  testing manually
         tasks.put(1)
@@ -227,12 +216,26 @@ if __name__ == "__main__":
 
     elif mode == 'debug':
 
+        # create tasks list
+        for i in range(num_simulations):
+            tasks.put(num_episodes)
+
+        # start simulations processes
+        pool = multiprocessing.Pool(processes=num_simulations)
+        processes = []
+        for i in range(num_simulations):
+            new_process = multiprocessing.Process(target=simulation, args=(
+                results, tasks, partial(ai_move, ai), partial(ai_move, ai_old), render_game, save_episodes,))
+            processes.append(new_process)
+            new_process.start()
+
         while True:
             # Read result
             new_result = results.get()
 
     elif mode == 'training':
         num_finished_simulations = 0
+        training = False
         memory = []
 
         #  start the progressbar
@@ -240,27 +243,65 @@ if __name__ == "__main__":
                                       widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
 
-        while True:
+        while True: 
 
-            # save memory every n episodes
-            if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
-                pickle.dump(memory, open(filename, "wb"))
+            if not training:
 
-            # Read result
-            new_result = results.get()
+                if num_finished_simulations == 0:
 
-            # Save in list
-            memory.append(new_result)
-            num_finished_simulations += 1
-            bar.update(num_finished_simulations)
+                    # create tasks list
+                    for i in range(num_simulations):
+                        tasks.put(num_episodes)
 
-            if render_game:
-                #  call the UI appropiate for the game
-                DisplayMain(new_result, game_interface.name)
+                    # restart all simulations
+                    pool = multiprocessing.Pool(processes=num_simulations)
+                    processes = []
+                    for i in range(num_simulations):
+                        new_process = multiprocessing.Process(target=simulation, args=(
+                            results, tasks, partial(ai_move, ai), partial(ai_move, ai_old), render_game, save_episodes,))
+                        processes.append(new_process)
+                        new_process.start()
 
-            if num_finished_simulations == total_episodes:
-                #  when all the simulations are completed save and exit
-                pickle.dump(memory, open(filename, "wb"))
-                break
+                # wait to read result
+                new_result = results.get()
+
+                # Save in list
+                memory.append(new_result)
+                num_finished_simulations += 1
+                bar.update(num_finished_simulations)
+
+                if render_game:
+                    #  call the UI appropiate for the game
+                    DisplayMain(new_result, game_interface.name)
+
+                #  when all simulations are complete
+                if num_finished_simulations == total_episodes:
+                    # save memory
+                    pickle.dump(memory, open(filename, "wb"))
+
+                    # Set process for training the network
+                    pool = multiprocessing.Pool(processes=1)
+                    processes = []
+                    new_process = multiprocessing.Process(
+                        target=training_nn, args=(game_interface,))
+                    processes.append(new_process)
+                    new_process.start()
+
+                    # reset simulations count
+                    num_finished_simulations = 0
+                    training = True
+
+                 # save memory every n episodes
+                if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
+                    pickle.dump(memory, open(filename, "wb"))
+
+            else:
+
+                print("starting training")
+                # wait to read result
+                new_result = results.get()
+
+                print("completed training")
+                training = False
 
         bar.finish()

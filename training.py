@@ -70,7 +70,6 @@ def training_nn(game, nnet):
 
     nnet.pre_run(model_path)
     vh_pred, ph_pred = nnet.pred([X[0,:,:]])
-    print(vh_pred, ph_pred)
     nnet.fit(X, V, P, 64, 100, model_path, model_path)
 
 
