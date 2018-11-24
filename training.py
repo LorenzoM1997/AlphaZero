@@ -67,7 +67,11 @@ def training_nn(game, nnet):
     """
     X, V, P = load_data_for_training(game)
     model_path = './model/checkpoint/' + 'model.ckpt'
-    nnet.fit(X, V, P, 64)
+
+    nnet.pre_run(model_path)
+    vh_pred, ph_pred = nnet.pred([X[0,:,:]])
+    print(vh_pred, ph_pred)
+    nnet.fit(X, V, P, 64, 100, model_path, model_path)
 
 
 if __name__ == "__main__":
@@ -76,3 +80,5 @@ if __name__ == "__main__":
     input_shape = game.layers().shape
     nnet = NN(input_shape, 5, len(game.action_space), True)
     training_nn(game, nnet)
+
+    

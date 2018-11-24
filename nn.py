@@ -17,6 +17,9 @@ class NN():
             strides (int tuple/list or int): Stride of convolution
             padding ("SAME" or "valid"): "SAME" if 0 adding added during convolution
         """
+        # make sure there is no other graph
+        tf.reset_default_graph()
+
         self.lr = lr
         self.input_dim = input_dim
         self.num_hidden_layers = num_hidden_layers
@@ -38,6 +41,7 @@ class NN():
         self.ce_loss = self._cross_entropy_with_logits()
         self.mse_loss = self._mean_sq_error()
         self.train_op = self.train()
+        self.saver = tf.train.Saver()
 
     def create_directory(self,model_saver_path = './models/checkpoint/model.ckpt',
             final_model_saver_path='./model/checkpoint/model.ckpt', summary_path='./model/summary/'):
@@ -250,7 +254,7 @@ class NN():
 
 
     def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = './model/checkpoint/model.ckpt',
-            final_model_saver_path='./model/checkpoint/model.ckpt', summary_path='./model/summary/'):
+            summary_path='./model/summary/'):
         """training model and save
         Args:
             X: input
@@ -259,20 +263,24 @@ class NN():
             batch_size: batch size for training data in every iteration
             epoch: training epochs
             model_saver_path: path for storing models obtained during training process
-            final_model_saver_path: path for final mdoel
             summary_path: path for storing summaries of loss
         """
 
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
-        saver = tf.train.Saver()
         summary_op = tf.summary.merge_all()
+
+        saver = self.saver
 
         #if gpu
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
         #with tf.Session(config=config) as sess:
+
+         # initialize session
+        #self.pre_run(model_saver_path)
+        #print("pre-run completed")
 
         with tf.Session() as sess:
             # Initialize session.
@@ -299,29 +307,37 @@ class NN():
                 if step % 1000 == 0:#store model every 1000 iteration times, may be changed due to # of network parameters
                     saver.save(sess, model_saver_path, global_step=step)
 
-            saver.save(sess, final_model_saver_path)
+            saver.save(sess, model_saver_path)
         return None
 
-    def pred(new_input, final_model_saver_path='./model/checkpoint/model.ckpt'):
-        meta_path = final_model_saver_path+'.meta'
-        model_path = final_model_saver_path
-        saver = tf.train.import_meta_graph(meta_path)
+    def pre_run(self, model_path='./model/checkpoint/model.ckpt'):
+
+        meta_path = model_path+'.meta'
+
+        # set the current session
+        self.sess = tf.Session()
+        #saver = tf.train.import_meta_graph(meta_path)
+        self.saver.restore(self.sess, model_path)
+        self.sess.run(tf.local_variables_initializer())
+        self.sess.run(tf.global_variables_initializer())
+
+    def pred(self,new_input):
+        """
+        args:
+            new_input: a matrix of shape (1, num_layers, num_rows, num_cols)
+
+        returns:
+            a list [vh pred, ph_pred]
+        """
 
         #if gpu
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
         #with tf.Session(config=config) as sess:
 
-        with tf.Session() as sess:
-            saver.restore(sess, model_path)
-            graph = tf.get_default_graph()
-            value_prob_op = graph.get_operation_by_name('value_head')
-            value_pred = graph.get_tensor_by_name('value_head:0')
-            vh_pred = sess.run(value_pred, feed_dict={self.inputs: new_input, self.training: False})
-            policy_prob_op = graph.get_operation_by_name('policy_head')
-            policy_pred = graph.get_tensor_by_name('policy_head:0')
-            ph_pred = sess.run(policy_pred, feed_dict={self.inputs: new_input, self.training: False})
-            ph_pred = tf.argmax(ph_pred, axis=1)
-            pred = [vh_pred, ph_pred]
-        return pred
+        with self.sess as sess:
+            vh_pred, ph_pred = sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
+            ph_pred = np.argmax(ph_pred, axis = 1)
+
+        return [vh_pred, ph_pred]
 
