@@ -18,7 +18,7 @@ from training import load_data_for_training
 import uct
 
 # change the following line to change game
-game_interface = ConnectFour()
+game_interface = TicTacToe()
 game = GameGlue(game_interface)
 
 
@@ -29,6 +29,7 @@ def random_move():
 
 
 def epsilon_greedy(greedy_move):
+    global game
     epsilon = 0.05
     if random.random() < epsilon:
         action, policy = random_move()
@@ -37,7 +38,7 @@ def epsilon_greedy(greedy_move):
             action, policy = greedy_move()
         except:
             action = greedy_move()
-            policy = -1
+            policy = np.ones(len(game.action_space))
     return [action, policy]
 
 
@@ -63,7 +64,7 @@ def ai_move(ai, mode='training'):
     if mode == 'training':
         #  during training we are using some randomization
         action, policy = epsilon_greedy(ai.get_action)
-        if policy == -1:
+        if np.all(policy == 1):
             # overwrite the policy if it didn't make a random move
             policy = ai.policy
     else:
@@ -127,11 +128,11 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
         return total_reward, n_episodes
 
 
-def elo_rating(results, tasks, elo_opponent=0, main_player=random_move, opponent=random_move):
+def elo_rating(results, tasks, scores, elo_opponent=0, main_player=random_move, opponent=random_move):
     reward, episodes = simulation(results, tasks, main_player, opponent,
-                                  render=False, evaluation=True)
+                                  render=False, save_episodes=True, evaluation=True)
     elo = (reward * 400) / episodes + elo_opponent
-    return elo
+    scores.put(elo)
 
 
 if __name__ == "__main__":
@@ -150,7 +151,7 @@ if __name__ == "__main__":
 
     if mode == 'training':
         render_game = False
-        num_episodes = 25
+        num_episodes = 3
         num_simulations = 4
         episode_to_save = 5
         save_episodes = True
@@ -203,10 +204,7 @@ if __name__ == "__main__":
     # Define a list (queue) for tasks and computation results
     tasks = manager.Queue()
     results = manager.Queue()
-
-    # UNCOMMENT THIS for testing the ELO rating
-    # tasks.put(100)
-    #print("ELO rating against random: ", elo_rating(results, tasks, partial(ai_move, ai)))
+    scores = manager.Queue()
 
     if mode == 'manual':
         #  testing manually
@@ -233,10 +231,15 @@ if __name__ == "__main__":
             # Read result
             new_result = results.get()
 
+            if render_game:
+                #  call the UI appropiate for the game
+                DisplayMain(new_result, game_interface.name)
+
     elif mode == 'training':
         num_finished_simulations = 0
         training = False
         memory = []
+        elo = 0
 
         #  start the progressbar
         bar = progressbar.ProgressBar(maxval=total_episodes,
@@ -257,8 +260,8 @@ if __name__ == "__main__":
                     pool = multiprocessing.Pool(processes=num_simulations)
                     processes = []
                     for i in range(num_simulations):
-                        new_process = multiprocessing.Process(target=simulation, args=(
-                            results, tasks, partial(ai_move, ai), partial(ai_move, ai_old), render_game, save_episodes,))
+                        new_process = multiprocessing.Process(target=elo_rating, args=(
+                            results, tasks, scores, 360, partial(ai_move, ai), partial(ai_move, ai_old), ))
                         processes.append(new_process)
                         new_process.start()
 
@@ -270,12 +273,14 @@ if __name__ == "__main__":
                 num_finished_simulations += 1
                 bar.update(num_finished_simulations)
 
-                if render_game:
-                    #  call the UI appropiate for the game
-                    DisplayMain(new_result, game_interface.name)
-
                 #  when all simulations are complete
                 if num_finished_simulations == total_episodes:
+
+                    for s in range(num_simulations):
+                        score = scores.get()
+                        print(score)
+                        elo = elo + score
+
                     # save memory
                     pickle.dump(memory, open(filename, "wb"))
 
@@ -283,7 +288,7 @@ if __name__ == "__main__":
                     pool = multiprocessing.Pool(processes=1)
                     processes = []
                     new_process = multiprocessing.Process(
-                        target=training_nn, args=(game_interface,))
+                        target=training_nn, args=(game_interface,nnet_2,))
                     processes.append(new_process)
                     new_process.start()
 
