@@ -1,5 +1,6 @@
 from UI.TicTacToeUI import *
-
+from UI.ConnectFourUI import *
+from UI.CheckerUI import *
 
 def DisplayMain(boardMatrix, gamename):
     totalMoves = len(boardMatrix)
