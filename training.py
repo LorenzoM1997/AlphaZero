@@ -9,14 +9,12 @@ from nn import NN
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
-
 def find(pattern, path):
     result = []
     for file in os.listdir(path):
         if fnmatch.fnmatch(file, pattern):
             result.append(file)
     return result
-
 
 def load_data_for_training(game):
 
@@ -58,20 +56,62 @@ def load_data_for_training(game):
     print("Episodes in data_set:", len(V))
     return [X, V, P]
 
-
 def training_nn(game, nnet):
-    """
-    Args:
-        game: a Game object
-        nnet: a NN object
-    """
-    X, V, P = load_data_for_training(game)
-    model_path = './model/checkpoint/' + 'model.ckpt'
+        """
+        Args:
+            game: a Game object
+            nnet: a NN object
+        """
+        X, V, P = load_data_for_training(game)
+        model_path = './model/checkpoint/' + 'model.ckpt'
 
-    nnet.pre_run(model_path)
-    vh_pred, ph_pred = nnet.pred([X[0,:,:]])
-    nnet.fit(X, V, P, 64, 100, model_path, model_path)
+        nnet.fit(X, V, P, 64, 100, model_path, model_path)
 
+class NetTrainer():
+
+    def __init__(self, game, residual_layers = 5):
+        """
+        Args:
+            game: A Game object
+            residual_layers(int): number of residual layers. Default is 5
+        """
+        self.game = game
+        input_shape = game.layers().shape
+        policy_shape = len(game.action_space)
+
+        self.nnet_1 = NN(input_shape, residual_layers, policy_shape, True)
+        self.path_1 = './model/checkpoint/' + 'old.ckpt'
+        self.nnet_2 = NN(input_shape, residual_layers, policy_shape, True)
+        self.path_2 = './model/checkpoint/' + 'new.ckpt'
+
+    def train(self, name):
+        """
+        Args:
+            name(string): 'new' or 'old'
+        """
+        if name == 'old':
+            training_nn(self.game, self.nnet_1)
+        elif name == 'new':
+            training_nn(self.game, self.nnet_2)
+        else:
+            print("invalid name.")
+
+        # already prepare for evaluation
+        self.nnet_2.pre_run(model_path)
+        self.nnet_1.pre_run(model_path)
+
+    def pred(self, name, new_input):
+        """
+        Args:
+            name(string): 'new' or 'old'
+            new_input: a list [X, V, P]
+        """
+        if name == 'old':
+            self.nnet_1.pred(new_input)
+        elif name == 'new':
+            self.nnet_2.pred(new_input)
+        else:
+            print("invalid name.")
 
 if __name__ == "__main__":
     # IMPORTANT game definition

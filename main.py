@@ -13,8 +13,7 @@ import progressbar
 import random
 import tensorflow as tf
 from time import sleep, strftime, gmtime
-from training import training_nn
-from training import load_data_for_training
+from training import *
 import uct
 
 # change the following line to change game
@@ -140,20 +139,16 @@ if __name__ == "__main__":
     ai = uct.UCTValues(game)
     ai_old = uct.UCTValues(game)
 
-    residual_layers = 5
-    input_shape = game_interface.layers().shape
-    policy_shape = len(game_interface.action_space)
-    nnet_1 = NN(input_shape, residual_layers, policy_shape, True)
-    nnet_2 = NN(input_shape, residual_layers, policy_shape, True)
+    Trainer = NetTrainer(game_interface)
 
     #  modes: 'training', 'manual', 'debug'
     mode = 'training'
 
     if mode == 'training':
         render_game = False
-        num_episodes = 3
+        num_episodes = 1
         num_simulations = 4
-        episode_to_save = 5
+        episode_to_save = 2
         save_episodes = True
         ai.DEBUG = False
         ai_old.DEBUG = False
@@ -239,6 +234,7 @@ if __name__ == "__main__":
         num_finished_simulations = 0
         training = False
         memory = []
+        prev_elo = 360
         elo = 0
 
         #  start the progressbar
@@ -261,7 +257,7 @@ if __name__ == "__main__":
                     processes = []
                     for i in range(num_simulations):
                         new_process = multiprocessing.Process(target=elo_rating, args=(
-                            results, tasks, scores, 360, partial(ai_move, ai), partial(ai_move, ai_old), ))
+                            results, tasks, scores, prev_elo, partial(ai_move, ai), partial(ai_move, ai_old), ))
                         processes.append(new_process)
                         new_process.start()
 
@@ -277,20 +273,18 @@ if __name__ == "__main__":
                 if num_finished_simulations == total_episodes:
 
                     for s in range(num_simulations):
-                        score = scores.get()
-                        print(score)
+                        score = scores.get() 
                         elo = elo + score
+                    elo = elo/ num_simulations
 
                     # save memory
                     pickle.dump(memory, open(filename, "wb"))
 
                     # Set process for training the network
-                    pool = multiprocessing.Pool(processes=1)
-                    processes = []
-                    new_process = multiprocessing.Process(
-                        target=training_nn, args=(game_interface,nnet_2,))
-                    processes.append(new_process)
-                    new_process.start()
+                    if elo > prev_elo:
+                        Trainer.train('new')
+                    else:
+                        Trainer.train('old')
 
                     # reset simulations count
                     num_finished_simulations = 0
