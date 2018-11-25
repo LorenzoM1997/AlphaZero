@@ -14,5 +14,9 @@ def DisplayMain(boardMatrix, gamename):
 
     if gamename == "TicTacToe":
         TicTacToe_Init(rows, cols, simulationsArray)
+    elif gamename == "ConnectFour":
+        ConnectFour_Init(rows, cols, simulationsArray)
+    elif gamename == "Checkers":
+        Checkers_Init(rows, cols, simulationsArray)
     else:
         print("game not recognized")
