@@ -13,6 +13,7 @@ class Checkers:
     BACKWARDS_PLAYER = P2
     HEIGHT = 8
     WIDTH = 4
+    MAX_MOVES = 150
 
     P1_SYMBOL = 'o'
     P1_K_SYMBOL = 'O'
@@ -26,8 +27,9 @@ class Checkers:
         the board will be created with a start board configuration.
         the_player_turn=True indicates turn of player P1
         """
-        # initialize player
+        # initialize player and moves
         self.player_turn = the_player_turn
+        self.moves_taken = 0
 
         # initialize board
         if old_spots is None:
@@ -38,17 +40,19 @@ class Checkers:
         self.board = np.array(spots)
 
         # initialize action space
-        self.action_space = np.zeros((32, 32, 2), dtype=np.uint8)
+        action_space = np.zeros((32, 32, 2), dtype=np.uint8)
         for i in range(32):
             for j in range(32):
-                self.action_space[i, j] = np.array([i, j])
+                action_space[i, j] = np.array([i, j])
+
+        super().__init__(8, 4, 2, action_space, 'Checkers')
 
 
     def tile_to_row_col(self, tile):
         """
         Converts tile index to row col index.
         """
-        row = np.floor(tile / self.HEIGHT)
+        row = np.floor(tile / self.WIDTH)
         col = tile % self.WIDTH 
         return np.array([row, col])
 
@@ -69,14 +73,14 @@ class Checkers:
         a move.
         """
         return np.array([self.tile_to_row_col(action[0]), 
-                         self.tile_to_row_col(action[1])])
+                         self.tile_to_row_col(action[1])], dtype=np.uint8)
 
     def move_to_action(self, move):
-          """
-          Converts a 2 by 2 array move to an action.
-          """
-          return np.array([self.row_col_to_tile(move[0]), 
-                           self.row_col_to_tile(move[1])])
+        """
+        Converts a 2 by 2 array move to an action.
+        """
+        return np.array([self.row_col_to_tile(move[0]), 
+                          self.row_col_to_tile(move[1])], dtype=np.uint8)
           
 
     def reset_board(self):
@@ -232,6 +236,32 @@ class Checkers:
         return answer
 
 
+    def check_win_conditions(self):
+      """
+      Returns true when a player wins (other player has no pieces left)
+      or draw.
+      """
+
+      # count player 1 and 2 pieces
+      p1_pieces = 0
+      p2_pieces = 0
+      for i in range(self.HEIGHT):
+        for j in range(self.WIDTH):
+          if self.board[i, j] % 2 == 0:
+            p2_pieces += 1
+          else:
+            p1_pieces += 1
+
+      # check for win
+      if p2_pieces == 0:
+        return 1  # player one wins
+
+      if p1_pieces == 0:
+        return -1  # player two wins
+      
+      return 0
+
+
     def get_piece_locations(self):
         """
         Gets all the pieces of the current player
@@ -252,7 +282,6 @@ class Checkers:
         """
         Gets the possible moves that can be made from the current board configuration.
         """
-
         piece_locations = self.get_piece_locations()
 
         try:
@@ -276,6 +305,7 @@ class Checkers:
         which players turn it is.
         """
         move = self.action_to_move(action)
+        print(move)
         if abs(move[0][0] - move[1][0]) == 2:
             for j in range(len(move) - 1):
                 if move[j][0] % 2 == 1:
@@ -291,7 +321,7 @@ class Checkers:
                         
                 self.board[int((move[j][0] + move[j + 1][0]) / 2)][middle_y] = self.EMPTY_SPOT
 
-
+        print(move[len(move) - 1][0])
         self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.board[move[0][0]][move[0][1]]
         if move[len(move) - 1][0] == self.HEIGHT - 1 and self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] == self.P1:
             self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.P1_K
@@ -304,7 +334,10 @@ class Checkers:
         if switch_player_turn:
             self.player_turn = not self.player_turn
 
+        self.moves_taken += 1
+        return self.check_win_conditions()
 
+        
     def get_potential_spots_from_moves(self, moves):
         """
         Get's the potential spots for the board if it makes any of the given moves.
@@ -368,14 +401,7 @@ class Checkers:
                 temp_line += "|"
             for i in range(self.WIDTH):
                 temp_line = temp_line + " " + self.get_symbol([j, i]) + " |"
-                if i != 3 or j % 2 != 1:  # TODO should figure out if this 3 should be changed to self.WIDTH-1
+                if i != 3 or j % 2 != 1:
                     temp_line = temp_line + "///|"
             print(temp_line)
             print(norm_line)
-
-game = Checkers()
-game.render()
-print(game.legal_moves())
-# game.step([[2, 0], [3, 0]])
-game.render()
-print(game.action_space)
