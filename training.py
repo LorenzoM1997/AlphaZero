@@ -97,8 +97,8 @@ class NetTrainer():
             print("invalid name.")
 
         # already prepare for evaluation
-        self.nnet_2.pre_run(model_path)
-        self.nnet_1.pre_run(model_path)
+        self.nnet_1.pre_run(self.path_1)
+        self.nnet_2.pre_run(self.path_2)
 
     def pred(self, name, new_input):
         """
