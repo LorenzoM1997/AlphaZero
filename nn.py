@@ -3,7 +3,8 @@
 import tensorflow as tf
 import numpy as np
 import math
-
+import os
+import shutil
 
 class NN():
     def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
@@ -46,11 +47,11 @@ class NN():
         self.train_op = self.train()
         self.saver = tf.train.Saver()
 
-    def create_directory(self,model_saver_path = 'models/checkpoint',
+    def create_directory(self,model_saver_path = 'model/checkpoint',
             final_model_saver_path='model/checkpoint'):
         """ create directories to store checkpoint files
         Args:
-            model_saver_path: path for storing models obtained during training process
+            model_saver_path: path for storing model obtained during training process
             final_model_saver_path: path for final mdoel
             summary_path: path for storing summaries of loss
         """
@@ -58,8 +59,8 @@ class NN():
         # Create parent directory
         if not os.path.exists('model'):
             os.mkdir('model')
-        if not os.path.exists('models'):
-            os.mkdir('models')
+        if not os.path.exists('model'):
+            os.mkdir('model')
 
         # Create directory for the last checkpoint
         if os.path.exists(final_model_saver_path):
@@ -261,7 +262,7 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'models/checkpoint',
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint',
             final_model_saver_path='model/checkpoint'):
         """training model and save
         Args:
@@ -270,7 +271,7 @@ class NN():
             p_lab: policy label
             batch_size: batch size for training data in every iteration
             epoch: training epochs
-            model_saver_path: path for storing models obtained during training process
+            model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
 
