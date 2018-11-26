@@ -98,6 +98,10 @@ class UCT(object):
         history_copy = self.history[:]
         state = history_copy[-1]
 
+        pruning = True
+        discounting = True
+
+
         expand = True
         for t in range(1, self.max_actions + 1):
             legal = self.board.legal_actions(history_copy[-1])
@@ -118,6 +122,11 @@ class UCT(object):
                 action, state = choice(actions_states)
 
             history_copy.append(state)
+
+            # Pruning on depth
+            #shallowest_win #TODO not sure how to identify shallowest win
+            #if pruning and stats[state] > shallowest_win:
+            #    break
 
             if expand and state not in stats:
                 expand = False
@@ -141,7 +150,14 @@ class UCT(object):
                 continue
             S = stats[state]
             S.visits += 1
-            S.value += end_values * multiplier
+
+            # Discounting control
+            if discounting:
+                S.value += (end_values*multiplier)/len(visited_states)
+            else:
+                S.value += end_values * multiplier
+
+
 
 
 class UCTValues(UCT):
