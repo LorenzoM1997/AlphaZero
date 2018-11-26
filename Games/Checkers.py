@@ -283,7 +283,7 @@ class Checkers(Game):
             actions = np.zeros((len(moves), 2))
             for i in range(len(moves)):
                 actions[i] = self.move_to_action(moves[i])
-            return actions
+            return actions.tolist()
         except TypeError:
             return []
     
@@ -293,7 +293,6 @@ class Checkers(Game):
         Makes a given move on the board, and (as long as is wanted) switches the indicator for which players turn it is.
         """
         move = self.action_to_move(action)
-        print(move)
         if abs(move[0][0] - move[1][0]) == 2:
             for j in range(len(move) - 1):
                 if move[j][0] % 2 == 1:
@@ -309,7 +308,6 @@ class Checkers(Game):
                         
                 self.board[int((move[j][0] + move[j + 1][0]) / 2)][middle_y] = self.EMPTY_SPOT
 
-        print(move[len(move) - 1][0])
         self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.board[move[0][0]][move[0][1]]
         if move[len(move) - 1][0] == self.HEIGHT - 1 and self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] == self.P1:
             self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.P1_K
