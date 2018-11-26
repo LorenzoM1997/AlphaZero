@@ -29,6 +29,9 @@ class NN():
         self.kernel_size = kernel_size
         self.policy_head_dim = policy_head_dim
 
+        # Create directory, delete if exsited
+        self.create_directory()
+
         self.inputs = tf.placeholder(tf.float32, shape=np.append(
             None, input_dim).tolist())  # Variable batch size
         self.training = tf.placeholder(tf.bool)
@@ -43,35 +46,30 @@ class NN():
         self.train_op = self.train()
         self.saver = tf.train.Saver()
 
-    def create_directory(self,model_saver_path = './models/checkpoint/model.ckpt',
-            final_model_saver_path='./model/checkpoint/model.ckpt', summary_path='./model/summary/'):
+    def create_directory(self,model_saver_path = 'models/checkpoint',
+            final_model_saver_path='model/checkpoint'):
         """ create directories to store checkpoint files
         Args:
             model_saver_path: path for storing models obtained during training process
             final_model_saver_path: path for final mdoel
             summary_path: path for storing summaries of loss
         """
-        globel_path = os.getcwd()
-        globel_final_model_saver_path = os.path.join(globel_path, final_model_saver_path)
-        global_model_saver_path = os.path.join(globel_path, model_saver_path)
-        globel_summary_path = os.path.join(globel_path, summary_path)
-        if os.path.exists(globel_final_model_saver_path):
-            shutil.rmtree(globel_final_model_saver_path)
-            os.mkdir(globel_final_model_saver_path)
-        else:
-            os.mkdir(globel_final_model_saver_path)
 
-        if os.path.exists(global_model_saver_path):
-            shutil.rmtree(global_model_saver_path)
-            os.mkdir(global_model_saver_path)
-        else:
-            os.mkdir(global_model_saver_path)
+        # Create parent directory
+        if not os.path.exists('model'):
+            os.mkdir('model')
+        if not os.path.exists('models'):
+            os.mkdir('models')
 
-        if os.path.exists(globel_summary_path):
-            shutil.rmtree(globel_summary_path)
-            os.mkdir(globel_summary_path)
-        else:
-            os.mkdir(globel_summary_path)
+        # Create directory for the last checkpoint
+        if os.path.exists(final_model_saver_path):
+            shutil.rmtree(final_model_saver_path)
+        os.mkdir(final_model_saver_path)
+
+        # Create directory for all checkpoints and summary
+        if os.path.exists(model_saver_path):
+            shutil.rmtree(model_saver_path)
+        os.mkdir(model_saver_path)
 
         return None
 
@@ -80,23 +78,28 @@ class NN():
         Returns:
             List of resBlocks
         """
-        hidden_layers = []
+        with tf.variable_scope('Residual_Blocks'):
+            hidden_layers = []
 
-        # first convolutional layer is different
-        initial_filter = tf.Variable(tf.random_uniform(
-            [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
-        first_layer = tf.nn.conv2d(
-            self.inputs, initial_filter, self.strides, self.padding)
-        hidden_layers.append(first_layer)
+            # first convolutional layer is different
+            with tf.variable_scope('Residual_Block_1'):
+                initial_filter = tf.Variable(tf.random_uniform(
+                    [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
+                first_layer = tf.nn.conv2d(
+                    self.inputs, initial_filter, self.strides, self.padding)
+                hidden_layers.append(first_layer)
 
-        resblk = self.resBlock(first_layer, self.filters,
-                               True, strides=self.strides, padding=self.padding)
-        hidden_layers.append(resblk)
-        if self.num_hidden_layers > 1:
-            for i in range(self.num_hidden_layers-1):
-                resblk = self.resBlock(
-                    resblk, self.filters, True, self.strides, self.padding)
+                resblk = self.resBlock(first_layer, self.filters,
+                    True, strides=self.strides, padding=self.padding)
                 hidden_layers.append(resblk)
+
+            if self.num_hidden_layers > 1:
+                for i in range(self.num_hidden_layers-1):
+                    with tf.variable_scope('Residual_Block_'+str(i+2)):
+                        resblk = self.resBlock(resblk, self.filters, True, self.strides, self.padding)
+
+                    hidden_layers.append(resblk)
+
         return hidden_layers
 
     def _build_value_head(self):
@@ -106,27 +109,27 @@ class NN():
         """
 
         # goes back from n channels to 1
-        vh_filter = tf.Variable(tf.random_uniform(
-            [self.kernel_size, self.kernel_size, self.filters, 1]))
-        vh = tf.nn.conv2d(
-            self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
+        with tf.variable_scope('Value_head'):
+            vh_filter = tf.Variable(tf.random_uniform(
+                [self.kernel_size, self.kernel_size, self.filters, 1]))
+            vh = tf.nn.conv2d(
+                self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
 
-        vh_bn = self.batch_norm(vh, self.training)
-        vh_bn_relu = tf.nn.relu(vh_bn)
-        vh_flat = tf.layers.flatten(vh_bn_relu)
-        vh_dense = tf.layers.dense(
-            inputs=vh_flat,
-            units=20,  # Arbitrary number. Consider decreasing for connect4.
-            use_bias=False,
-            activation=tf.nn.leaky_relu
-        )
-        vh_out = tf.layers.dense(
-            inputs=vh_dense,
-            units=1,
-            use_bias=False,
-            activation=tf.nn.tanh,
-            name='value_head'
-        )
+            vh_bn = self.batch_norm(vh, self.training)
+            vh_bn_relu = tf.nn.relu(vh_bn)
+            vh_flat = tf.layers.flatten(vh_bn_relu)
+            vh_dense = tf.layers.dense(
+                inputs=vh_flat,
+                units=20,  # Arbitrary number. Consider decreasing for connect4.
+                use_bias=False,
+                activation=tf.nn.leaky_relu
+            )
+            vh_out = tf.layers.dense(
+                inputs=vh_dense,
+                units=1,
+                use_bias=False,
+                activation=tf.nn.tanh
+            )
         return vh_out
 
     def _build_policy_head(self):
@@ -134,23 +137,24 @@ class NN():
         Returns:
             ph_out (tf.dense, units=policy_head_dim): probability distribution 
         """
+        with tf.variable_scope('Policy_head'):
 
-        # goes back from n channels to 1
-        ph_filter = tf.Variable(tf.random_uniform(
-            [self.kernel_size, self.kernel_size, self.filters, 1]))
-        ph = tf.nn.conv2d(
-            self.hidden_layers[-1], ph_filter, [1, 1, 1, 1], "SAME")
+            # goes back from n channels to 1
+            ph_filter = tf.Variable(tf.random_uniform(
+                [self.kernel_size, self.kernel_size, self.filters, 1]))
+            ph = tf.nn.conv2d(
+                self.hidden_layers[-1], ph_filter, [1, 1, 1, 1], "SAME")
 
-        ph_bn = self.batch_norm(ph, self.training)
-        ph_bn_relu = tf.nn.relu(ph_bn)
-        ph_flat = tf.layers.flatten(ph_bn_relu)
-        ph_dense = tf.layers.dense(
-            inputs=ph_flat,
-            units=self.policy_head_dim,
-            use_bias=False,
-            activation=tf.nn.tanh,
-            name='policy_head'
-        )
+            ph_bn = self.batch_norm(ph, self.training)
+            ph_bn_relu = tf.nn.relu(ph_bn)
+            ph_flat = tf.layers.flatten(ph_bn_relu)
+            ph_dense = tf.layers.dense(
+                inputs=ph_flat,
+                units=self.policy_head_dim,
+                use_bias=False,
+                activation=tf.nn.tanh,
+                name='policy_head'
+            )
         return ph_dense
 
     def conv2d(self, inputs, channels, strides, padding):
@@ -193,12 +197,16 @@ class NN():
         return y
 
     def _cross_entropy_with_logits(self):
-        loss = tf.nn.sigmoid_cross_entropy_with_logits(
-            logits=self.policy_head, labels=self.policy_label)
-        return tf.reduce_mean(loss)
+        with tf.variable_scope('Loss_in_policy_head'):
+            loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                logits=self.policy_head, labels=self.policy_label)
+            loss = tf.reduce_mean(loss)
+        return loss
 
     def _mean_sq_error(self):
-        return tf.losses.mean_squared_error(self.value_label, self.value_head)
+        with tf.variable_scope('Loss_in_value_head'):
+            mse = tf.losses.mean_squared_error(self.value_label, self.value_head)
+        return mse
 
     def getBatch(self, X, train_step, batch_size, value_labels, policy_labels):
         """ Set batch size for each training step
@@ -239,8 +247,8 @@ class NN():
         """
         self.loss = self.ce_loss + self.mse_loss
 
-        tf.summary.scalar('ce_loss', self.ce_loss)
-        tf.summary.scalar('mse_loss', self.mse_loss)
+        tf.summary.scalar('policy_head_loss', self.ce_loss)
+        tf.summary.scalar('value_head_loss', self.mse_loss)
         tf.summary.scalar('total_loss', self.loss)
 
         if opt_type == 'AdamOptimizer':
@@ -253,8 +261,8 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = './model/checkpoint/model.ckpt',
-            summary_path='./model/summary/'):
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'models/checkpoint',
+            final_model_saver_path='model/checkpoint'):
         """training model and save
         Args:
             X: input
@@ -272,6 +280,8 @@ class NN():
         summary_op = tf.summary.merge_all()
 
         saver = self.saver
+        model_file_path = model_saver_path + '/model.ckpt'
+        final_model_file_path = final_model_saver_path + '/model.ckpt'
 
         #if gpu
         # config = tf.ConfigProto()
@@ -287,8 +297,7 @@ class NN():
             sess.run(init)
 
             # Initialize summary writer.
-            summary_writer = tf.summary.FileWriter(summary_path, graph=sess.graph)
-
+            summary_writer = tf.summary.FileWriter(model_saver_path, graph=sess.graph)
 
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
@@ -304,13 +313,13 @@ class NN():
                 if step % 20 == 0:
                     summary_str = sess.run(summary_op, feed_dict=feed_dict)
                     summary_writer.add_summary(summary_str, step)
-                if step % 1000 == 0:#store model every 1000 iteration times, may be changed due to # of network parameters
+                if step % 1000 == 0: #store model every 1000 iteration times, may be changed due to # of network parameters
                     saver.save(sess, model_saver_path, global_step=step)
 
-            saver.save(sess, model_saver_path)
+            saver.save(sess, final_model_saver_path)
         return None
 
-    def pre_run(self, model_path='./model/checkpoint/model.ckpt'):
+    def pre_run(self, model_path='model/checkpoint/model.ckpt'):
 
         meta_path = model_path+'.meta'
 
