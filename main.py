@@ -3,6 +3,7 @@ import Games
 import UI
 from Games.TicTacToe import TicTacToe
 from Games.ConnectFour import ConnectFour
+from Games.Checkers import Checkers
 from GameGlue import GameGlue
 from UI.GameDisplay import DisplayMain
 import multiprocessing
@@ -181,7 +182,7 @@ if __name__ == "__main__":
         render_game = True
         num_simulations = 1
         num_episodes = 25
-        save_episodes = False
+        save_episodes = True
         ai.DEBUG = True
         ai_old.DEBUG = True
 
@@ -276,6 +277,7 @@ if __name__ == "__main__":
                         score = scores.get() 
                         elo = elo + score
                     elo = elo/ num_simulations
+                    print('elo:', elo)
 
                     # save memory
                     pickle.dump(memory, open(filename, "wb"))

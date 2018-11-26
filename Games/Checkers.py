@@ -2,9 +2,10 @@ import math
 import copy
 from functools import reduce
 import numpy as np
+from Games.Games import Game
 
 
-class Checkers:
+class Checkers(Game):
     EMPTY_SPOT = 0
     P1 = 1
     P2 = 2
