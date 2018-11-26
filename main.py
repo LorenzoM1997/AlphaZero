@@ -148,7 +148,7 @@ if __name__ == "__main__":
     if mode == 'training':
         render_game = False
         num_episodes = 1
-        num_simulations = 4
+        num_simulations = 2
         episode_to_save = 2
         save_episodes = True
         ai.DEBUG = False

@@ -98,8 +98,8 @@ class UCT(object):
         history_copy = self.history[:]
         state = history_copy[-1]
 
-        pruning = True
-        discounting = True
+        pruning = False
+        discounting = False
 
 
         expand = True
@@ -149,13 +149,15 @@ class UCT(object):
             if state not in stats:
                 continue
             S = stats[state]
-            S.visits += 1
+            S.visits += 1[]
+            S.value += end_values * multiplier
+
 
             # Discounting control
-            if discounting:
-                S.value += (end_values*multiplier)/len(visited_states)
-            else:
-                S.value += end_values * multiplier
+            # if discounting:
+            #     S.value += (end_values*multiplier)/len(visited_states)
+            # else:
+            #     S.value += end_values * multiplier
 
 
 
