@@ -21,14 +21,14 @@ class Checkers:
     P2_K_SYMBOL = 'X'
 
 
-    def __init__(self, old_spots=None, the_player_turn=True):
+    def __init__(self, old_spots=None, player_turn=True):
         """
         Unless specified otherwise, 
         the board will be created with a start board configuration.
         the_player_turn=True indicates turn of player P1
         """
         # initialize player and moves
-        self.player_turn = the_player_turn
+        self.player_turn = player_turn  # true for player one
         self.moves_taken = 0
 
         # initialize board
@@ -83,7 +83,7 @@ class Checkers:
                           self.row_col_to_tile(move[1])], dtype=np.uint8)
           
 
-    def reset_board(self):
+    def restart(self):
         """
         Resets the current configuration of the game board to the original 
         starting position.
@@ -91,23 +91,11 @@ class Checkers:
         self.board = Checkers().board
 
 
-    def empty_board(self):
+    def invert_board(self):
         """
-        Removes any pieces currently on the board and leaves the board with nothing but empty spots.
+        Toggles the player.
         """
-        spots = [[j, j, j, j] for j in [self.EMPTY_SPOT] * self.HEIGHT]   
-        self.board = spots
-
-    
-    def is_game_over(self):
-        """
-        Finds out and returns weather the game currently being played is over or
-        not.
-        """
-        if not self.legal_moves():
-            return True
-
-        return False
+        self.player_turn = not self.player_turn
 
 
     def not_spot(self, loc):
@@ -301,8 +289,7 @@ class Checkers:
     
     def step(self, action, switch_player_turn=True):
         """
-        Makes a given move on the board, and (as long as is wanted) switches the indicator for
-        which players turn it is.
+        Makes a given move on the board, and (as long as is wanted) switches the indicator for which players turn it is.
         """
         move = self.action_to_move(action)
         print(move)
@@ -331,37 +318,8 @@ class Checkers:
             self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.board[move[0][0]][move[0][1]]
         self.board[move[0][0]][move[0][1]] = self.EMPTY_SPOT
 
-        if switch_player_turn:
-            self.player_turn = not self.player_turn
-
         self.moves_taken += 1
         return self.check_win_conditions()
-
-        
-    def get_potential_spots_from_moves(self, moves):
-        """
-        Get's the potential spots for the board if it makes any of the given moves.
-        If moves is None then returns it's own current spots.
-        """
-        if moves is None:
-            return self.board
-        answer = []
-        for move in moves:
-            original_spots = copy.deepcopy(self.board)
-            self.step(move, switch_player_turn=False)
-            answer.append(self.board) 
-            self.board = original_spots 
-        
-        return answer
-
-
-    def insert_pieces(self, pieces_info):
-        """
-        Inserts a set of pieces onto a board.
-        pieces_info is in the form: [[vert1, horz1, piece1], [vert2, horz2, piece2], ..., [vertn, horzn, piecen]]
-        """
-        for piece_info in pieces_info:
-            self.board[piece_info[0]][piece_info[1]] = piece_info[2]
 
 
     def get_symbol(self, location):
