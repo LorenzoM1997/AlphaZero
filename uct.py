@@ -24,8 +24,9 @@ class UCT(object):
         self.DEBUG = True
         self.memorize = True
 
+        # Heauristics
         self.referenceTime = time.time()
-        self.useDiscounting = True
+        self.useDiscounting = False
 
         self.calculation_time = float(kwargs.get('time', 10))
         self.max_actions = int(kwargs.get('max_actions', 1000))

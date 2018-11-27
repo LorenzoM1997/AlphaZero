@@ -18,7 +18,7 @@ from training import *
 import uct
 
 # change the following line to change game
-game_interface = TicTacToe()
+game_interface = ConnectFour()
 game = GameGlue(game_interface)
 
 
@@ -145,11 +145,11 @@ if __name__ == "__main__":
     Trainer = NetTrainer(game_interface)
 
     #  modes: 'training', 'manual', 'debug', 'evaluation'
-    mode = 'training'
+    mode = 'evaluation'
 
     if mode == 'training':
         render_game = False
-        num_episodes = 1
+        num_episodes = 2
         num_simulations = 2
         episode_to_save = 2
         save_episodes = True
@@ -193,9 +193,9 @@ if __name__ == "__main__":
         print("Total number of episodes: ", num_simulations * num_episodes)
 
     elif mode == 'evaluation':
-        render_game = False
-        num_simulations = 4
-        num_episodes = 100
+        render_game = True
+        num_simulations = 1
+        num_episodes = 1
         save_episodes = True
         ai.DEBUG = False
 
