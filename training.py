@@ -100,23 +100,22 @@ class NetTrainer():
         """
         Args:
             name(string): 'new' or 'old'
-            new_input: a list [X, V, P]
+            new_input: a layers representation
         """
         if name == 'old':
             self.nnet.pre_run(self.path_1)
-            self.nnet.pred(new_input)
+            return self.nnet.pred(new_input)
         elif name == 'new':
             self.nnet.pre_run(self.path_1)
-            self.nnet.pred(new_input)
+            return self.nnet.pred(new_input)
         else:
             print("invalid name.")
 
 if __name__ == "__main__":
     # IMPORTANT game definition
     game = TicTacToe()
-    input_shape = game.layers().shape
-    nnet = NN(input_shape, 5, len(game.action_space), True)
-    model_path = './model/checkpoint/model.ckpt'
-    training_nn(game, nnet, model_path)
+    Trainer = NetTrainer(game)
+    Trainer.train('old')
+    Trainer.train('new')
 
     
