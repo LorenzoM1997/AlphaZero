@@ -96,20 +96,20 @@ class NetTrainer():
 
         # already prepare for evaluation
 
-    def pred(self, name, new_input):
-        """
-        Args:
-            name(string): 'new' or 'old'
-            new_input: a layers representation
-        """
+    def prepare(self, name):
         if name == 'old':
             self.nnet.pre_run(self.path_1)
-            return self.nnet.pred(new_input)
         elif name == 'new':
             self.nnet.pre_run(self.path_2)
-            return self.nnet.pred(new_input)
         else:
             print("invalid name.")
+
+    def pred(self, new_input):
+        """
+        Args:
+            new_input: a layers representation
+        """
+        return self.nnet.pred(new_input)
 
 if __name__ == "__main__":
     # IMPORTANT game definition

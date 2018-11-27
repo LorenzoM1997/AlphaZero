@@ -338,9 +338,7 @@ class NN():
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
         #with tf.Session(config=config) as sess:
-
-        with self.sess as sess:
-            vh_pred, ph_pred = sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
+        vh_pred, ph_pred = self.sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
 
         return [vh_pred, ph_pred]
 
