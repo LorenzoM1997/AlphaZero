@@ -8,7 +8,7 @@ class slot(Label):
         super().__init__(mainFrame,
                          font=displayFont,
                          height=1,
-                         width=4,)
+                         width=2,)
 
 # construct UI
 def TicTacToe_Init(rows, cols, array):
@@ -46,7 +46,7 @@ def TicTacToe_Init(rows, cols, array):
                          bg='black')
     bottom_label.pack()
 
-    # build game board grid
+    # build game board grid 
     slots = []
     slots = generate_grid(rows, cols, mainFrame)
 
