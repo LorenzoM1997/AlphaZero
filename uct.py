@@ -40,6 +40,7 @@ class UCT(object):
 
         self.max_depth = 0
         self.data = {}
+        self.stats.clear()
         if self.memorize:
             try:
                 current_stats = self.stats[self.history[-1]]

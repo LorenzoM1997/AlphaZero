@@ -137,12 +137,14 @@ def elo_rating(results, tasks, scores, elo_opponent=0, main_player=random_move, 
 
 if __name__ == "__main__":
 
+    print("Game: ",game_interface.name)
+
     ai = uct.UCTValues(game)
     ai_old = uct.UCTValues(game)
 
     Trainer = NetTrainer(game_interface)
 
-    #  modes: 'training', 'manual', 'debug'
+    #  modes: 'training', 'manual', 'debug', 'evaluation'
     mode = 'training'
 
     if mode == 'training':
@@ -190,6 +192,19 @@ if __name__ == "__main__":
         print("Parallel simulations: ", num_simulations)
         print("Total number of episodes: ", num_simulations * num_episodes)
 
+    elif mode == 'evaluation':
+        render_game = False
+        num_simulations = 4
+        num_episodes = 100
+        save_episodes = True
+        ai.DEBUG = False
+
+        total_episodes = num_simulations * num_episodes  # total number of episodes
+
+        print("Mode: evaluation")
+        print("Parallel simulations:", num_simulations)
+        print("Total number of episodes:", total_episodes)
+
     else:
         print("mode name not recognized.")
         exit()
@@ -230,6 +245,47 @@ if __name__ == "__main__":
             if render_game:
                 #  call the UI appropiate for the game
                 DisplayMain(new_result, game_interface.name)
+
+    elif mode == 'evaluation':
+
+        prev_elo = 0
+        # create tasks list
+        for i in range(num_simulations):
+            tasks.put(num_episodes)
+
+        # start simulations processes
+        pool = multiprocessing.Pool(processes=num_simulations)
+        processes = []
+        for i in range(num_simulations):
+            new_process = multiprocessing.Process(target=elo_rating, args=(
+                            results, tasks, scores, prev_elo, partial(ai_move, ai), random_move, ))
+            processes.append(new_process)
+            new_process.start()
+
+        num_finished_simulations = 0
+        elo = 0
+
+        bar = progressbar.ProgressBar(maxval=total_episodes,
+                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
+
+        while True:
+            # Read result
+            new_result = results.get()
+
+            # increment simulations
+            num_finished_simulations += 1
+            bar.update(num_finished_simulations)
+
+            if num_finished_simulations == total_episodes:
+
+                    for s in range(num_simulations):
+                        score = scores.get() 
+                        elo = elo - score
+                    elo = elo/ num_simulations
+                    print('elo:', elo)
+          
+        bar.finish()
 
     elif mode == 'training':
         num_finished_simulations = 0
@@ -275,7 +331,7 @@ if __name__ == "__main__":
 
                     for s in range(num_simulations):
                         score = scores.get() 
-                        elo = elo + score
+                        elo = elo - score
                     elo = elo/ num_simulations
                     print('elo:', elo)
 
