@@ -8,7 +8,7 @@ class slot(Label):
         super().__init__(mainFrame,
                          font=displayFont,
                          height=1,
-                         width=4,)
+                         width=2,)
 
 # construct UI
 def ConnectFour_Init(rows, cols, array):
@@ -89,17 +89,17 @@ def ExecuteSimulations():
         for r in range(0, len(simulationsArray[0])):  # rows
             for c in range(0, len(simulationsArray[0][0])):  # cols
                 if (simulationsArray[i][r][c] == 1):
-                    slots[r*num_cols + c].config(text='O',
+                    slots[r*num_cols + c].config(text=' ',
                                                  font=displayFont,
                                                  bg='yellow')
                 elif (simulationsArray[i][r][c] == 2):
-                    slots[r*num_cols + c].config(text='O',
+                    slots[r*num_cols + c].config(text=' ',
                                                  font=displayFont,
                                                  bg='red')
                 else:
-                    slots[r*num_cols + c].config(text='O',
+                    slots[r*num_cols + c].config(text=' ',
                                                  font=displayFont,
-                                                 bg='white')
+                                                 bg='grey')
         moveCount += 1
         buttons[0].config(text=str(moveCount))
 
@@ -129,5 +129,5 @@ def generate_grid(rows, cols, mainFrame):
                           column=c,
                           padx=10,
                           pady=10)
-            new_slot.config(bg='white')
+            new_slot.config(bg='azure3')
     return slots
