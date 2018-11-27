@@ -24,6 +24,9 @@ class UCT(object):
         self.DEBUG = True
         self.memorize = True
 
+        self.referenceTime = time.time()
+        self.useDiscounting = True
+
         self.calculation_time = float(kwargs.get('time', 10))
         self.max_actions = int(kwargs.get('max_actions', 1000))
 
@@ -60,6 +63,7 @@ class UCT(object):
             return legal[0]
 
         begin = time.time()
+        self.referenceTime = time.time()
         while time.time() - begin < self.calculation_time:
             if games >= 1600:
                 break
@@ -99,10 +103,6 @@ class UCT(object):
         history_copy = self.history[:]
         state = history_copy[-1]
 
-        pruning = False
-        discounting = False
-
-
         expand = True
         for t in range(1, self.max_actions + 1):
             legal = self.board.legal_actions(history_copy[-1])
@@ -123,11 +123,6 @@ class UCT(object):
                 action, state = choice(actions_states)
 
             history_copy.append(state)
-
-            # Pruning on depth
-            #shallowest_win #TODO not sure how to identify shallowest win
-            #if pruning and stats[state] > shallowest_win:
-            #    break
 
             if expand and state not in stats:
                 expand = False
@@ -150,17 +145,12 @@ class UCT(object):
             if state not in stats:
                 continue
             S = stats[state]
-            S.visits += 1[]
-            S.value += end_values * multiplier
+            S.visits += 1
 
-
-            # Discounting control
-            # if discounting:
-            #     S.value += (end_values*multiplier)/len(visited_states)
-            # else:
-            #     S.value += end_values * multiplier
-
-
+            if self.useDiscounting:
+                S.value += (end_values * multiplier)/self.referenceTime
+            else:
+                S.value += end_values * multiplier
 
 
 class UCTValues(UCT):
@@ -181,3 +171,4 @@ class UCTValues(UCT):
             key=lambda x: (x['average'], x['plays']),
             reverse=True
         )
+
