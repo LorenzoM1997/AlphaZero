@@ -79,8 +79,8 @@ class NetTrainer():
         policy_shape = len(game.action_space)
 
         self.nnet = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_1 = './model/checkpoint/old.ckpt'
-        self.path_2 = './model/checkpoint/new.ckpt'
+        self.path_1 = './model/checkpoint/old/'
+        self.path_2 = './model/checkpoint/new/'
 
     def train(self, name):
         """
@@ -106,7 +106,7 @@ class NetTrainer():
             self.nnet.pre_run(self.path_1)
             return self.nnet.pred(new_input)
         elif name == 'new':
-            self.nnet.pre_run(self.path_1)
+            self.nnet.pre_run(self.path_2)
             return self.nnet.pred(new_input)
         else:
             print("invalid name.")

@@ -61,14 +61,12 @@ class NN():
             os.mkdir('model')
 
         # Create directory for the last checkpoint
-        if os.path.exists(final_model_saver_path):
-            shutil.rmtree(final_model_saver_path)
-        os.mkdir(final_model_saver_path)
+        if not os.path.exists(final_model_saver_path):
+            os.mkdir(final_model_saver_path)
 
         # Create directory for all checkpoints and summary
-        if os.path.exists(model_saver_path):
-            shutil.rmtree(model_saver_path)
-        os.mkdir(model_saver_path)
+        if not os.path.exists(model_saver_path):
+            os.mkdir(model_saver_path)
 
         return None
 
@@ -260,8 +258,8 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint/model.ckpt',
-            final_model_saver_path='model/checkpoint/model.ckpt'):
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint/model1/',
+            final_model_saver_path='model/checkpoint/model1/'):
         """training model and save
         Args:
             X: input
@@ -274,6 +272,9 @@ class NN():
         """
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
+        final_model_saver_path += 'model.ckpt'
+        model_saver_path += 'model.ckpt'
+
         init = tf.global_variables_initializer()
         summary_op = tf.summary.merge_all()
 
@@ -284,16 +285,13 @@ class NN():
         # config.gpu_options.allow_growth = True
         #with tf.Session(config=config) as sess:
 
-         # initialize session
-        #self.pre_run(model_saver_path)
-        #print("pre-run completed")
 
         with tf.Session() as sess:
             # Initialize session.
             sess.run(init)
 
             # Initialize summary writer.
-            summary_writer = tf.summary.FileWriter(model_saver_path, graph=sess.graph)
+            summary_writer = tf.summary.FileWriter('model/summary', graph=sess.graph)
 
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
@@ -315,8 +313,9 @@ class NN():
             saver.save(sess, final_model_saver_path)
         return None
 
-    def pre_run(self, model_path='model/checkpoint/model.ckpt'):
+    def pre_run(self, model_path='model/checkpoint/old'):
 
+        model_path += 'model.ckpt'
         meta_path = model_path+'.meta'
 
         # set the current session
@@ -342,7 +341,6 @@ class NN():
 
         with self.sess as sess:
             vh_pred, ph_pred = sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
-            ph_pred = np.argmax(ph_pred, axis = 1)
 
         return [vh_pred, ph_pred]
 
