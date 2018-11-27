@@ -196,6 +196,7 @@ if __name__ == "__main__":
         render_game = False
         num_simulations = 4
         num_episodes = 100
+        episode_to_save = 4
         save_episodes = True
         ai.DEBUG = False
 
@@ -204,6 +205,14 @@ if __name__ == "__main__":
         print("Mode: evaluation")
         print("Parallel simulations:", num_simulations)
         print("Total number of episodes:", total_episodes)
+
+        try:
+            #  file where the episodes are saved
+            filename = 'saved\\' + game.name + \
+                strftime("%Y-%m-%d-", gmtime()) + \
+                str(np.random.randint(100000))
+        except:
+            print("[WARNING] Evaluation mode will not be saving files.")
 
     else:
         print("mode name not recognized.")
@@ -248,6 +257,7 @@ if __name__ == "__main__":
 
     elif mode == 'evaluation':
 
+        memory = []
         prev_elo = 0
         # create tasks list
         for i in range(num_simulations):
@@ -274,16 +284,22 @@ if __name__ == "__main__":
             new_result = results.get()
 
             # increment simulations
+            memory.append(new_result)
             num_finished_simulations += 1
             bar.update(num_finished_simulations)
 
             if num_finished_simulations == total_episodes:
 
-                    for s in range(num_simulations):
-                        score = scores.get() 
-                        elo = elo - score
-                    elo = elo/ num_simulations
-                    print('elo:', elo)
+                for s in range(num_simulations):
+                    score = scores.get() 
+                    elo = elo - score
+                elo = elo/ num_simulations
+                print('elo:', elo)
+
+                pickle.dump(memory, open(filename, "wb"))
+
+            if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
+                pickle.dump(memory, open(filename, "wb"))
           
         bar.finish()
 
