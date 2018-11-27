@@ -264,11 +264,18 @@ if __name__ == "__main__":
 
         num_finished_simulations = 0
         elo = 0
+
+        bar = progressbar.ProgressBar(maxval=total_episodes,
+                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
+
         while True:
             # Read result
             new_result = results.get()
 
+            # increment simulations
             num_finished_simulations += 1
+            bar.update(num_finished_simulations)
 
             if num_finished_simulations == total_episodes:
 
@@ -277,7 +284,8 @@ if __name__ == "__main__":
                         elo = elo - score
                     elo = elo/ num_simulations
                     print('elo:', elo)
-            
+          
+        bar.finish()
 
     elif mode == 'training':
         num_finished_simulations = 0
