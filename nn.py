@@ -59,8 +59,6 @@ class NN():
         # Create parent directory
         if not os.path.exists('model'):
             os.mkdir('model')
-        if not os.path.exists('model'):
-            os.mkdir('model')
 
         # Create directory for the last checkpoint
         if os.path.exists(final_model_saver_path):
@@ -262,8 +260,8 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint',
-            final_model_saver_path='model/checkpoint'):
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint/model.ckpt',
+            final_model_saver_path='model/checkpoint/model.ckpt'):
         """training model and save
         Args:
             X: input
@@ -274,15 +272,12 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
-
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
         summary_op = tf.summary.merge_all()
 
         saver = self.saver
-        model_file_path = model_saver_path + '/model.ckpt'
-        final_model_file_path = final_model_saver_path + '/model.ckpt'
 
         #if gpu
         # config = tf.ConfigProto()

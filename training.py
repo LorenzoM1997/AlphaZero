@@ -56,14 +56,13 @@ def load_data_for_training(game):
     print("Episodes in data_set:", len(V))
     return [X, V, P]
 
-def training_nn(game, nnet):
+def training_nn(game, nnet, model_path):
         """
         Args:
             game: a Game object
             nnet: a NN object
         """
         X, V, P = load_data_for_training(game)
-        model_path = './model/checkpoint/' + 'model.ckpt'
 
         nnet.fit(X, V, P, 64, 100, model_path, model_path)
 
@@ -79,10 +78,9 @@ class NetTrainer():
         input_shape = game.layers().shape
         policy_shape = len(game.action_space)
 
-        self.nnet_1 = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_1 = './model/checkpoint/' + 'old.ckpt'
-        self.nnet_2 = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_2 = './model/checkpoint/' + 'new.ckpt'
+        self.nnet = NN(input_shape, residual_layers, policy_shape, True)
+        self.path_1 = './model/checkpoint/old.ckpt'
+        self.path_2 = './model/checkpoint/new.ckpt'
 
     def train(self, name):
         """
@@ -90,15 +88,13 @@ class NetTrainer():
             name(string): 'new' or 'old'
         """
         if name == 'old':
-            training_nn(self.game, self.nnet_1)
+            training_nn(self.game, self.nnet, self.path_1)
         elif name == 'new':
-            training_nn(self.game, self.nnet_2)
+            training_nn(self.game, self.nnet, self.path_2)
         else:
             print("invalid name.")
 
         # already prepare for evaluation
-        self.nnet_1.pre_run(self.path_1)
-        self.nnet_2.pre_run(self.path_2)
 
     def pred(self, name, new_input):
         """
@@ -107,9 +103,11 @@ class NetTrainer():
             new_input: a list [X, V, P]
         """
         if name == 'old':
-            self.nnet_1.pred(new_input)
+            self.nnet.pre_run(self.path_1)
+            self.nnet.pred(new_input)
         elif name == 'new':
-            self.nnet_2.pred(new_input)
+            self.nnet.pre_run(self.path_1)
+            self.nnet.pred(new_input)
         else:
             print("invalid name.")
 
@@ -118,6 +116,7 @@ if __name__ == "__main__":
     game = TicTacToe()
     input_shape = game.layers().shape
     nnet = NN(input_shape, 5, len(game.action_space), True)
-    training_nn(game, nnet)
+    model_path = './model/checkpoint/model.ckpt'
+    training_nn(game, nnet, model_path)
 
     
