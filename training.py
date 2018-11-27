@@ -24,7 +24,7 @@ def load_data_for_training(game):
 
     X = np.empty((0, game.num_layers, game.num_rows, game.num_cols))  # where input (board state) will be saved
     V = np.empty((0, 1))  # where the value (one of labels) will be saved
-    P = []  # where the policy (one of the labels) will be saved
+    P = np.empty((0, len(game.action_space)))  # where the policy (one of the labels) will be saved
 
     for file in files:
         print(file)
@@ -37,20 +37,24 @@ def load_data_for_training(game):
 
         X_file = np.empty((0, game.num_layers, game.num_rows, game.num_cols))
         V_file = np.empty((0, 1))
+        P_file = np.empty((0, len(game.action_space)))
         for episode in data:
             X_episode = np.empty((len(episode), game.num_layers, game.num_rows, game.num_cols))
             V_episode = np.empty((len(episode), 1))
+            P_episode = np.empty((len(episode), len(game.action_space)))
             for i in range(len(episode)):
                 game.board = episode[i][0]
                 X_episode[i] = game.layers() 
-                P.append(episode[i][1])
+                P_episode[i] = episode[i][1]
                 V_episode[i] = episode[i][2]
 
             X_file = np.append(X_file, X_episode, axis = 0)
             V_file = np.append(V_file, V_episode, axis = 0)
+            P_file = np.append(P_file, P_episode, axis = 0)
 
         X = np.append(X, X_file, axis = 0)
         V = np.append(V, V_file, axis = 0)
+        P = np.append(P, P_file, axis = 0)
         print("Correctly loaded: ", file)
 
     print("Episodes in data_set:", len(V))
@@ -63,12 +67,17 @@ def training_nn(game, nnet, model_path):
             nnet: a NN object
         """
         X, V, P = load_data_for_training(game)
+        assert len(X) == len(V)
+        perm = np.random.permutation(len(X))
+        X = X[perm]
+        V = V[perm]
+        P = P[perm]
 
-        nnet.fit(X, V, P, 64, 100, model_path, model_path)
+        nnet.fit(X, V, P, 100, 1000, model_path, model_path)
 
 class NetTrainer():
 
-    def __init__(self, game, residual_layers = 5):
+    def __init__(self, game, residual_layers = 8):
         """
         Args:
             game: A Game object
