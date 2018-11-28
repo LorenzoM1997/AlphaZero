@@ -250,7 +250,8 @@ if __name__ == "__main__":
         processes = []
         for i in range(num_simulations):
             new_process = multiprocessing.Process(target=simulation, args=(
-                results, tasks, partial(ai_move, ai), partial(ai_move, ai_old), render_game, save_episodes,))
+                results, tasks, partial(ai_move, ai, command_list[i], input_list[i], output_list[i]),
+                partial(ai_move, ai_old, command_list[i], input_list[i], output_list[i]), render_game, save_episodes,))
             processes.append(new_process)
             new_process.start()
 
@@ -275,7 +276,7 @@ if __name__ == "__main__":
         processes = []
         for i in range(num_simulations):
             new_process = multiprocessing.Process(target=elo_rating, args=(
-                            results, tasks, scores, prev_elo, partial(ai_move, ai), random_move, ))
+                            results, tasks, scores, prev_elo, partial(ai_move, ai, command_list[i], input_list[i], output_list[i]), random_move, ))
             processes.append(new_process)
             new_process.start()
 
