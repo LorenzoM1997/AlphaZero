@@ -60,7 +60,7 @@ class NN():
             os.mkdir(model_path)
 
         # Create directory for all checkpoints and summary
-        model_saver_path = model_path+'/checkpont'
+        model_saver_path = model_path+'/checkpoint'
 
         if not os.path.exists(model_saver_path):
             os.mkdir(model_saver_path)
@@ -148,6 +148,7 @@ class NN():
                 activation=tf.nn.tanh,
                 name='policy_head'
             )
+
         return ph_dense
 
     def conv2d(self, inputs, channels, strides, padding):
@@ -159,7 +160,7 @@ class NN():
             padding=padding,
         )
 
-    def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.997, BATCH_EPSILON=1e-5):
+    def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.9, BATCH_EPSILON=1e-5):
         return tf.layers.batch_normalization(
             inputs=inputs,
             axis=1,
@@ -187,7 +188,7 @@ class NN():
         conv2_bn = self.batch_norm(conv2, training)
         y = conv2_bn + shortcut
         y_relu = tf.nn.relu(y)
-        return y
+        return y_relu
 
     def _cross_entropy_with_logits(self):
         with tf.variable_scope('Loss_in_policy_head'):
@@ -241,8 +242,9 @@ class NN():
         self.loss = self.ce_loss + self.mse_loss
 
         tf.summary.scalar('policy_head_loss', self.ce_loss)
-        #tf.summary.scalar('value_head_loss', self.mse_loss)
-        #tf.summary.scalar('total_loss', self.loss)
+        tf.summary.scalar('value_head_loss', self.mse_loss)
+        tf.summary.scalar('total_loss', self.loss)
+        tf.summary.histogram('ph', self.policy_head)
 
         if opt_type == 'AdamOptimizer':
             optimizer = tf.train.AdamOptimizer(self.lr)
@@ -265,7 +267,8 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
-        os.mkdir(model_saver_path)
+        if not os.path.exists(model_saver_path):
+            os.mkdir(model_saver_path)
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
         model_saver_path = os.getcwd() + model_saver_path
@@ -312,7 +315,7 @@ class NN():
 
     def pre_run(self, model_path='/model1/'):
 
-        model_saver_path = os.getcwd() + model_saver_path
+        model_saver_path = os.getcwd() + model_path
         model_path += 'model.ckpt'
         meta_path = model_path+'.meta'
 
@@ -320,8 +323,6 @@ class NN():
         self.sess = tf.Session()
         self.saver = tf.train.import_meta_graph(meta_path)
         self.saver.restore(self.sess, model_path)
-        #self.sess.run(tf.local_variables_initializer())
-        #self.sess.run(tf.global_variables_initializer())
 
     def pred(self,new_input):
         """

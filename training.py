@@ -5,6 +5,7 @@ import tensorflow as tf
 from nn import *
 from Games.Games import Game
 from Games.TicTacToe import *
+from Games.ConnectFour import *
 from nn import NN
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -73,7 +74,7 @@ def training_nn(game, nnet, model_path):
         V = V[perm]
         P = P[perm]
 
-        nnet.fit(X, V, P, 100, 1000, model_path, model_path)
+        nnet.fit(X, V, P, 100, 1000, model_path)
 
 class NetTrainer():
 
