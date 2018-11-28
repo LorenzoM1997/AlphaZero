@@ -85,7 +85,7 @@ def ExecuteSimulations():
     moveCount = 0
     num_cols = len(simulationsArray[0][0])
 
-    for i in range(0, len(simulationsArray)):  # tic-tac-toe states
+    for i in range(0, len(simulationsArray)):  # connect four states
         for r in range(0, len(simulationsArray[0])):  # rows
             for c in range(0, len(simulationsArray[0][0])):  # cols
                 if (simulationsArray[i][r][c] == 1):
