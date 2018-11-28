@@ -9,7 +9,7 @@ Some packages require an older version of python installed (particularly tensorf
     source venv/bin/activate
 
 Everyone should have installed:
-
+    
     pip install tensorflow
     pip install autopep8
     pip install progressbar2
