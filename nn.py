@@ -47,8 +47,7 @@ class NN():
         self.train_op = self.train()
         self.saver = tf.train.Saver()
 
-    def create_directory(self,model_saver_path = 'model/checkpoint',
-            final_model_saver_path='model/checkpoint'):
+    def create_directory(self,model_path = 'model'):
         """ create directories to store checkpoint files
         Args:
             model_saver_path: path for storing model obtained during training process
@@ -57,17 +56,14 @@ class NN():
         """
 
         # Create parent directory
-        if not os.path.exists('model'):
-            os.mkdir('model')
-
-        # Create directory for the last checkpoint
-        if not os.path.exists(final_model_saver_path):
-            os.mkdir(final_model_saver_path)
+        if not os.path.exists(model_path):
+            os.mkdir(model_path)
 
         # Create directory for all checkpoints and summary
+        model_saver_path = model_path+'/checkpont'
+
         if not os.path.exists(model_saver_path):
             os.mkdir(model_saver_path)
-
         return None
 
     def _build_hidden_layers(self):
@@ -245,8 +241,8 @@ class NN():
         self.loss = self.ce_loss + self.mse_loss
 
         tf.summary.scalar('policy_head_loss', self.ce_loss)
-        tf.summary.scalar('value_head_loss', self.mse_loss)
-        tf.summary.scalar('total_loss', self.loss)
+        #tf.summary.scalar('value_head_loss', self.mse_loss)
+        #tf.summary.scalar('total_loss', self.loss)
 
         if opt_type == 'AdamOptimizer':
             optimizer = tf.train.AdamOptimizer(self.lr)
@@ -258,8 +254,7 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint/model1/',
-            final_model_saver_path='model/checkpoint/model1/'):
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = '/model1/'):
         """training model and save
         Args:
             X: input
@@ -270,9 +265,11 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
+        os.mkdir(model_saver_path)
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
-        final_model_saver_path += 'model.ckpt'
+        model_saver_path = os.getcwd() + model_saver_path
+        final_model_saver_path = model_saver_path + 'model.ckpt'
         model_saver_path += 'model.ckpt'
 
         init = tf.global_variables_initializer()
@@ -313,17 +310,18 @@ class NN():
             saver.save(sess, final_model_saver_path)
         return None
 
-    def pre_run(self, model_path='model/checkpoint/old'):
+    def pre_run(self, model_path='/model1/'):
 
+        model_saver_path = os.getcwd() + model_saver_path
         model_path += 'model.ckpt'
         meta_path = model_path+'.meta'
 
         # set the current session
         self.sess = tf.Session()
-        #saver = tf.train.import_meta_graph(meta_path)
+        self.saver = tf.train.import_meta_graph(meta_path)
         self.saver.restore(self.sess, model_path)
-        self.sess.run(tf.local_variables_initializer())
-        self.sess.run(tf.global_variables_initializer())
+        #self.sess.run(tf.local_variables_initializer())
+        #self.sess.run(tf.global_variables_initializer())
 
     def pred(self,new_input):
         """
