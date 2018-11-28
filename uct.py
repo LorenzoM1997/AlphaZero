@@ -27,6 +27,10 @@ class UCT(object):
         self.DEBUG = True
         self.memorize = True
 
+        # Heauristics
+        self.referenceTime = time.time()
+        self.useDiscounting = False
+
         self.calculation_time = float(kwargs.get('time', 10))
         self.max_actions = int(kwargs.get('max_actions', 1000))
 
@@ -63,6 +67,7 @@ class UCT(object):
             return legal[0]
 
         begin = time.time()
+        self.referenceTime = time.time()
         while time.time() - begin < self.calculation_time:
             if games >= 1600:
                 break
@@ -159,7 +164,11 @@ class UCT(object):
                 continue
             S = stats[state]
             S.visits += 1
-            S.value += end_values * multiplier
+
+            if self.useDiscounting:
+                S.value += (end_values * multiplier)/self.referenceTime
+            else:
+                S.value += end_values * multiplier
 
 
 class UCTValues(UCT):
@@ -180,3 +189,4 @@ class UCTValues(UCT):
             key=lambda x: (x['average'], x['plays']),
             reverse=True
         )
+
