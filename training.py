@@ -24,7 +24,7 @@ def load_data_for_training(game):
 
     X = np.empty((0, game.num_layers, game.num_rows, game.num_cols))  # where input (board state) will be saved
     V = np.empty((0, 1))  # where the value (one of labels) will be saved
-    P = []  # where the policy (one of the labels) will be saved
+    P = np.empty((0, len(game.action_space)))  # where the policy (one of the labels) will be saved
 
     for file in files:
         print(file)
@@ -37,35 +37,43 @@ def load_data_for_training(game):
 
         X_file = np.empty((0, game.num_layers, game.num_rows, game.num_cols))
         V_file = np.empty((0, 1))
+        P_file = np.empty((0, len(game.action_space)))
         for episode in data:
             X_episode = np.empty((len(episode), game.num_layers, game.num_rows, game.num_cols))
             V_episode = np.empty((len(episode), 1))
+            P_episode = np.empty((len(episode), len(game.action_space)))
             for i in range(len(episode)):
                 game.board = episode[i][0]
                 X_episode[i] = game.layers() 
-                P.append(episode[i][1])
+                P_episode[i] = episode[i][1]
                 V_episode[i] = episode[i][2]
 
             X_file = np.append(X_file, X_episode, axis = 0)
             V_file = np.append(V_file, V_episode, axis = 0)
+            P_file = np.append(P_file, P_episode, axis = 0)
 
         X = np.append(X, X_file, axis = 0)
         V = np.append(V, V_file, axis = 0)
+        P = np.append(P, P_file, axis = 0)
         print("Correctly loaded: ", file)
 
     print("Episodes in data_set:", len(V))
     return [X, V, P]
 
-def training_nn(game, nnet):
+def training_nn(game, nnet, model_path):
         """
         Args:
             game: a Game object
             nnet: a NN object
         """
         X, V, P = load_data_for_training(game)
-        model_path = './model/checkpoint/' + 'model.ckpt'
+        assert len(X) == len(V)
+        perm = np.random.permutation(len(X))
+        X = X[perm]
+        V = V[perm]
+        P = P[perm]
 
-        nnet.fit(X, V, P, 64, 100, model_path, model_path)
+        nnet.fit(X, V, P, 100, 1000, model_path, model_path)
 
 class NetTrainer():
 
@@ -79,10 +87,9 @@ class NetTrainer():
         input_shape = game.layers().shape
         policy_shape = len(game.action_space)
 
-        self.nnet_1 = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_1 = './model/checkpoint/' + 'old.ckpt'
-        self.nnet_2 = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_2 = './model/checkpoint/' + 'new.ckpt'
+        self.nnet = NN(input_shape, residual_layers, policy_shape, True)
+        self.path_1 = './model/checkpoint/old/'
+        self.path_2 = './model/checkpoint/new/'
 
     def train(self, name):
         """
@@ -90,34 +97,34 @@ class NetTrainer():
             name(string): 'new' or 'old'
         """
         if name == 'old':
-            training_nn(self.game, self.nnet_1)
+            training_nn(self.game, self.nnet, self.path_1)
         elif name == 'new':
-            training_nn(self.game, self.nnet_2)
+            training_nn(self.game, self.nnet, self.path_2)
         else:
             print("invalid name.")
 
         # already prepare for evaluation
-        self.nnet_1.pre_run(self.path_1)
-        self.nnet_2.pre_run(self.path_2)
 
-    def pred(self, name, new_input):
-        """
-        Args:
-            name(string): 'new' or 'old'
-            new_input: a list [X, V, P]
-        """
+    def prepare(self, name):
         if name == 'old':
-            self.nnet_1.pred(new_input)
+            self.nnet.pre_run(self.path_1)
         elif name == 'new':
-            self.nnet_2.pred(new_input)
+            self.nnet.pre_run(self.path_2)
         else:
             print("invalid name.")
+
+    def pred(self, new_input):
+        """
+        Args:
+            new_input: a layers representation
+        """
+        return self.nnet.pred(new_input)
 
 if __name__ == "__main__":
     # IMPORTANT game definition
     game = TicTacToe()
-    input_shape = game.layers().shape
-    nnet = NN(input_shape, 5, len(game.action_space), True)
-    training_nn(game, nnet)
+    Trainer = NetTrainer(game)
+    Trainer.train('old')
+    Trainer.train('new')
 
     

@@ -47,8 +47,7 @@ class NN():
         self.train_op = self.train()
         self.saver = tf.train.Saver()
 
-    def create_directory(self,model_saver_path = 'model/checkpoint',
-            final_model_saver_path='model/checkpoint'):
+    def create_directory(self,model_path = 'model'):
         """ create directories to store checkpoint files
         Args:
             model_saver_path: path for storing model obtained during training process
@@ -57,21 +56,14 @@ class NN():
         """
 
         # Create parent directory
-        if not os.path.exists('model'):
-            os.mkdir('model')
-        if not os.path.exists('model'):
-            os.mkdir('model')
-
-        # Create directory for the last checkpoint
-        if os.path.exists(final_model_saver_path):
-            shutil.rmtree(final_model_saver_path)
-        os.mkdir(final_model_saver_path)
+        if not os.path.exists(model_path):
+            os.mkdir(model_path)
 
         # Create directory for all checkpoints and summary
-        if os.path.exists(model_saver_path):
-            shutil.rmtree(model_saver_path)
-        os.mkdir(model_saver_path)
+        model_saver_path = model_path+'/checkpont'
 
+        if not os.path.exists(model_saver_path):
+            os.mkdir(model_saver_path)
         return None
 
     def _build_hidden_layers(self):
@@ -249,8 +241,8 @@ class NN():
         self.loss = self.ce_loss + self.mse_loss
 
         tf.summary.scalar('policy_head_loss', self.ce_loss)
-        tf.summary.scalar('value_head_loss', self.mse_loss)
-        tf.summary.scalar('total_loss', self.loss)
+        #tf.summary.scalar('value_head_loss', self.mse_loss)
+        #tf.summary.scalar('total_loss', self.loss)
 
         if opt_type == 'AdamOptimizer':
             optimizer = tf.train.AdamOptimizer(self.lr)
@@ -262,8 +254,7 @@ class NN():
         return apply_gradient_op
 
 
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = 'model/checkpoint',
-            final_model_saver_path='model/checkpoint'):
+    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = '/model1/'):
         """training model and save
         Args:
             X: input
@@ -274,31 +265,30 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
-
+        os.mkdir(model_saver_path)
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
+
+        model_saver_path = os.getcwd() + model_saver_path
+        final_model_saver_path = model_saver_path + 'model.ckpt'
+        model_saver_path += 'model.ckpt'
 
         init = tf.global_variables_initializer()
         summary_op = tf.summary.merge_all()
 
         saver = self.saver
-        model_file_path = model_saver_path + '/model.ckpt'
-        final_model_file_path = final_model_saver_path + '/model.ckpt'
 
         #if gpu
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
         #with tf.Session(config=config) as sess:
 
-         # initialize session
-        #self.pre_run(model_saver_path)
-        #print("pre-run completed")
 
         with tf.Session() as sess:
             # Initialize session.
             sess.run(init)
 
             # Initialize summary writer.
-            summary_writer = tf.summary.FileWriter(model_saver_path, graph=sess.graph)
+            summary_writer = tf.summary.FileWriter('model/summary', graph=sess.graph)
 
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
@@ -320,16 +310,18 @@ class NN():
             saver.save(sess, final_model_saver_path)
         return None
 
-    def pre_run(self, model_path='model/checkpoint/model.ckpt'):
+    def pre_run(self, model_path='/model1/'):
 
+        model_saver_path = os.getcwd() + model_saver_path
+        model_path += 'model.ckpt'
         meta_path = model_path+'.meta'
 
         # set the current session
         self.sess = tf.Session()
-        #saver = tf.train.import_meta_graph(meta_path)
+        self.saver = tf.train.import_meta_graph(meta_path)
         self.saver.restore(self.sess, model_path)
-        self.sess.run(tf.local_variables_initializer())
-        self.sess.run(tf.global_variables_initializer())
+        #self.sess.run(tf.local_variables_initializer())
+        #self.sess.run(tf.global_variables_initializer())
 
     def pred(self,new_input):
         """
@@ -344,10 +336,7 @@ class NN():
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
         #with tf.Session(config=config) as sess:
-
-        with self.sess as sess:
-            vh_pred, ph_pred = sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
-            ph_pred = np.argmax(ph_pred, axis = 1)
+        vh_pred, ph_pred = self.sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
 
         return [vh_pred, ph_pred]
 

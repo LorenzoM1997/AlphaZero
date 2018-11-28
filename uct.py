@@ -19,6 +19,9 @@ class UCT(object):
         self.history = []
         self.stats = {}
 
+        self.use_nn = True
+        self.name = 'new'
+
         self.max_depth = 0
         self.data = {}
         self.DEBUG = True
@@ -38,7 +41,7 @@ class UCT(object):
     def update(self, state):
         self.history.append(self.board.pack_state(state))
 
-    def get_action(self):
+    def get_action(self, names, inputs, outputs):
         # Causes the AI to calculate the best action from the
         # current game state and return it.
 
@@ -68,8 +71,10 @@ class UCT(object):
         while time.time() - begin < self.calculation_time:
             if games >= 1600:
                 break
-            self.run_simulation()
+            self.run_simulation(names, inputs, outputs)
             games += 1  
+
+        names.put('done')
 
         # Display the number of calls of `run_simulation` and the
         # time elapsed.
@@ -92,14 +97,13 @@ class UCT(object):
         # Pick the action with the highest average value.
         return self.data['actions'][0]['action']
 
-    def run_simulation(self):
+    def run_simulation(self, names, inputs, outputs):
         # Plays out a "random" game from the current position,
         # then updates the statistics tables with the result.
 
         # A bit of an optimization here, so we have a local
         # variable lookup instead of an attribute access each loop.
         stats = self.stats
-
         visited_states = []
         history_copy = self.history[:]
         state = history_copy[-1]
@@ -121,7 +125,20 @@ class UCT(object):
                 )
             else:
                 # Otherwise, just make an arbitrary decision.
-                action, state = choice(actions_states)
+                if self.use_nn:
+                    names.put(self.name)
+                    inputs.put([self.board.game.layers()])
+                    vh_pred, ph_pred = outputs.get()
+                    ph_pred = ph_pred[0]
+                    for p, state in actions_states:
+                        stats[state] = Stat()
+                        stats[state].value = ph_pred[p]
+                        stats[state].visits = 1
+                    value, action, state = max(
+                        ((stats[S].value / (stats[S].visits or 1)) , p, S)
+                        for p, S in actions_states)
+                else:
+                    action, state = choice(actions_states)
 
             history_copy.append(state)
 
