@@ -19,13 +19,14 @@ from training import *
 import uct
 
 # change the following line to change game
-game_interface = TicTacToe()
+game_interface = ConnectFour()
 game = GameGlue(game_interface)
 
 
 def random_move():
     global game
-    action = np.random.choice(game.legal_moves())
+    a = np.random.randint(len(game.legal_moves()))
+    action = game.legal_moves()[a]
     return [action, np.zeros(len(game.action_space))]
 
 
@@ -59,7 +60,7 @@ def manual_move():
     return [action, np.zeros(len(game.action_space))]
 
 
-def ai_move(ai, names, inputs, outputs, mode='training'):
+def ai_move(ai, names, inputs, outputs, mode='testing'):
     global game
     ai.update(game.state)
     if mode == 'training':
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     #  modes: 'training', 'manual', 'debug', 'evaluation'
     mode = 'training'
 
-    if mode == 'training':
+    if  mode == 'training':
         render_game = False
         num_episodes = 4
         num_simulations = 1
@@ -197,9 +198,9 @@ if __name__ == "__main__":
 
     elif mode == 'evaluation':
         render_game = False
-        num_simulations = 4
-        num_episodes = 100
-        episode_to_save = 4
+        num_simulations = 64
+        num_episodes = 1
+        episode_to_save = 40
         save_episodes = True
         ai.DEBUG = False
 

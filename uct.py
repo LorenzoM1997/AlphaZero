@@ -29,7 +29,7 @@ class UCT(object):
 
         # Heauristics
         self.referenceTime = time.time()
-        self.useDiscounting = False
+        self.useDiscounting = True
 
         self.calculation_time = float(kwargs.get('time', 10))
         self.max_actions = int(kwargs.get('max_actions', 1000))
