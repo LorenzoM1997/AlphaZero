@@ -19,7 +19,7 @@ class UCT(object):
         self.history = []
         self.stats = {}
 
-        self.use_nn = True
+        self.use_nn = False
         self.name = 'new'
 
         self.max_depth = 0
