@@ -77,7 +77,7 @@ def training_nn(game, nnet, model_path):
 
 class NetTrainer():
 
-    def __init__(self, game, residual_layers = 8):
+    def __init__(self, game, residual_layers = 5):
         """
         Args:
             game: A Game object
