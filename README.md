@@ -24,7 +24,7 @@ Before running the program, create an empty folder named 'saved' if not present.
 
 There are different modes that can be used. For training mode do:
 
-python3 training.py
-python3 main.py
+    python3 training.py
+    python3 main.py
 
 for all other moves, you need to change the mode in the code at line 150 to either 'evaluation', 'debug' or 'manual'
