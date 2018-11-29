@@ -8,7 +8,7 @@ class slot(Label):
         super().__init__(mainFrame,
                          font=displayFont,
                          height=1,
-                         width=4,)
+                         width=2,)
 
 # construct UI
 def ConnectFour_Init(rows, cols, array):
@@ -20,7 +20,7 @@ def ConnectFour_Init(rows, cols, array):
     root = Tk()
     root.configure(background='black')
     displayFont = Font(family='Helvetica',
-                       size=65,
+                       size=35,
                        weight='bold')
 
     # initialize frames
@@ -89,15 +89,15 @@ def ExecuteSimulations():
         for r in range(0, len(simulationsArray[0])):  # rows
             for c in range(0, len(simulationsArray[0][0])):  # cols
                 if (simulationsArray[i][r][c] == 1):
-                    slots[r*num_cols + c].config(text='O',
+                    slots[r*num_cols + c].config(text='',
                                                  font=displayFont,
-                                                 bg='yellow')
+                                                 bg='gold')
                 elif (simulationsArray[i][r][c] == 2):
-                    slots[r*num_cols + c].config(text='O',
+                    slots[r*num_cols + c].config(text='',
                                                  font=displayFont,
                                                  bg='red')
                 else:
-                    slots[r*num_cols + c].config(text='O',
+                    slots[r*num_cols + c].config(text='',
                                                  font=displayFont,
                                                  bg='white')
         moveCount += 1
