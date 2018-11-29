@@ -13,6 +13,11 @@ def DisplayMain(boardMatrix, gamename):
     rows = len(simulationsArray[0])
     cols = len(simulationsArray[0][0])
 
+    # invert board for proper display
+    inversions = int(totalMoves/2)
+    for i in range(0, inversions):
+        simulationsArray[2*i + 1] = (3 - simulationsArray[2*i + 1]) % 3
+
     if gamename == "TicTacToe":
         TicTacToe_Init(rows, cols, simulationsArray)
     elif gamename == "ConnectFour":
