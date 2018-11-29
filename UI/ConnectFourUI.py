@@ -104,7 +104,7 @@ def ExecuteSimulations():
         buttons[0].config(text=str(moveCount))
 
         root.update()
-        sleep(3)
+        sleep(1)
 
 
 # needs multi-threading, crashes when trying to pause mid-execution
