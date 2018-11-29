@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='AlphaZeroDavis',
-      version='0.0.1',
+      version='v0.2',
       description='Alpha Zero implementation for various games',
       url='https://github.com/LorenzoM1997/AlphaZero',
       author='Lorenzo Mambretti',
