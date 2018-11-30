@@ -12,16 +12,18 @@ class NN():
 		self.input_dim = input_dim 
 		self.model = self._create_model()
 
-	def _conv2d(self, x, filters, kernel_size, activation, kernel_regularizer):
+	def _conv2d(self, x, filters, kernel_size, kernel_regularizer):
 		x = Conv2D(
 			filters=filters,
 			kernel_size = kernel_size,
-			activation = activation,
+			activation = 'linear',
 			kernel_regularizer = kernel_regularizer,
 			data_format= 'channels_first',
 			padding = 'same',
 			use_bias= False
 		)(x)
+
+		x = LeakyReLU() (x) # activation is not used
 
 		return x
 
@@ -57,6 +59,6 @@ class NN():
 		return (x)
 
 if __name__ == "__main__":
-	nn = NN((3,3),2,8)
+	nn = NN((2,3,3),2,8)
 
 
