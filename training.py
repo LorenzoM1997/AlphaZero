@@ -89,8 +89,8 @@ class NetTrainer():
         policy_shape = len(game.action_space)
 
         self.nnet = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_1 = './model/checkpoint/old/'
-        self.path_2 = './model/checkpoint/new/'
+        self.path_1 = '/model/checkpoint/old/'
+        self.path_2 = '/model/checkpoint/new/'
 
     def train(self, name):
         """

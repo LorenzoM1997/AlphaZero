@@ -271,9 +271,9 @@ class NN():
             os.mkdir(model_saver_path)
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
-        model_saver_path = os.getcwd() + model_saver_path
-        final_model_saver_path = model_saver_path + 'model.ckpt'
-        model_saver_path += 'model.ckpt'
+        model_saver_path = os.path.join(os.getcwd(), model_saver_path)
+        final_model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
+        model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
 
         init = tf.global_variables_initializer()
         summary_op = tf.summary.merge_all()
