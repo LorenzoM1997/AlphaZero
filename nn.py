@@ -267,11 +267,12 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
+        model_saver_path = os.path.join(os.getcwd(), model_saver_path)
         if not os.path.exists(model_saver_path):
             os.mkdir(model_saver_path)
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
-        model_saver_path = os.path.join(os.getcwd(), model_saver_path)
+        
         final_model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
         model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
 
