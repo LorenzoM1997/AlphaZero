@@ -17,13 +17,54 @@ class NN():
 	def _create_model(self):
 		input_layer = Input(shape=self.input_dim, name='input_layer')
 
-		x = Conv2D
+		#x = Conv2D
+
+    def policy_head(self, x):
+
+    	x = Conv2D(
+    	filters = 2
+    	, kernel_size = (1)
+    	, data_format="channels_first"
+    	, padding = 'same'
+    	, use_bias=False
+    	, activation='linear'
+    	, kernel_regularizer = regularizers.l2(self.reg_const)
+    	)(x)
+
+    	x = LeakyReLU()(x)
+
+    	x = Flatten()(x)
+
+    	x = Dense(
+    		self.output_dim
+    		, use_bias=False
+    		, activation='linear'
+    		, kernel_regularizer=regularizers.l2(self.reg_const)
+    		, name = 'policy_head'
+    		)(x)
+
+        return (x)
 
 
 
 
 
-def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -62,3 +103,5 @@ def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0
         self.mse_loss = self._mean_sq_error() # ?
         self.train_op = self.train()
         self.saver = tf.train.Saver()
+
+
