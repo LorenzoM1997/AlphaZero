@@ -10,14 +10,25 @@ import shutil
 class NN():
 	def __init__(self, input_dim, num_hidden_layers, policy_head_dim, lr=0.00025, kernel_size = 1, strides = 1):
 		self.input_dim = input_dim
-		return None
-
 		self.model = _create_model()
+
+    def _conv2d(self, x, filters, kernel_size, activation, kernel_regularizer):
+        x = Conv2D(
+            filters=filters,
+            kernel_size = kernel_size,
+            activation = activation,
+            kernel_regularizer = kernel_regularizer,
+            data_format= 'channels_first',
+            padding = 'same',
+            use_bias= False
+            )(x)
+
+        x = LeakyRelU()(x)
+        return x
 
 	def _create_model(self):
 		input_layer = Input(shape=self.input_dim, name='input_layer')
 
-		#x = Conv2D
 
     def policy_head(self, x):
 
