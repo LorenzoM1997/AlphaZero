@@ -32,7 +32,7 @@ class NN():
 
     def policy_head(self, x):
 
-    	x = Conv2D(
+    	x = _conv2d(x, 2, 1, 'linear', 
     	filters = 2
     	, kernel_size = (1)
     	, data_format="channels_first"
@@ -76,7 +76,7 @@ class NN():
 
 
     def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
-        """ 
+        """
         Args:
             input_dim (int tuple/list): Length, height, layers of input
             training (bool): True if model is training
@@ -114,5 +114,3 @@ class NN():
         self.mse_loss = self._mean_sq_error() # ?
         self.train_op = self.train()
         self.saver = tf.train.Saver()
-
-
