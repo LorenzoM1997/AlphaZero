@@ -1,6 +1,6 @@
-# keras implementation of nn.py
+	# keras implementation of nn.py
 
-from keras import layers
+from keras.layers import Conv2D, LeakyReLU
 from keras.engine.input_layer import Input
 import numpy as np
 import math
@@ -10,29 +10,33 @@ import shutil
 class NN():
 	def __init__(self, input_dim, num_hidden_layers, policy_head_dim, lr=0.00025, kernel_size = 1, strides = 1):
 		self.input_dim = input_dim
-		self.model = _create_model()
+		self.model = self._create_model()
 
-    def _conv2d(self, x, filters, kernel_size, activation, kernel_regularizer):
-        x = Conv2D(
-            filters=filters,
-            kernel_size = kernel_size,
-            activation = activation,
-            kernel_regularizer = kernel_regularizer,
-            data_format= 'channels_first',
-            padding = 'same',
-            use_bias= False
-            )(x)
+	def _conv2d(self, x, filters, kernel_size, kernel_regularizer):
+		x = Conv2D(
+			filters=filters,
+			kernel_size = kernel_size,
+			activation = 'linear',
+			kernel_regularizer = kernel_regularizer,
+			data_format= 'channels_first',
+			padding = 'same',
+			use_bias= False
+		)(x)
 
-        x = LeakyRelU()(x)
-        return x
+		x = LeakyReLU() (x) # activation is not used
+
+		return x
 
 	def _create_model(self):
 		input_layer = Input(shape=self.input_dim, name='input_layer')
+		x = self._conv2d(input_layer, 8, 1, LeakyReLU(), None)
+		return x
 
+	def policy_head(self, x):
 
     def policy_head(self, x):
 
-    	x = _conv2d(x, 2, 1, 'linear', 
+    	x = _conv2d(x, 2, 1, 'linear',
     	filters = 2
     	, kernel_size = (1)
     	, data_format="channels_first"
@@ -74,43 +78,19 @@ class NN():
 
 
 
+		x = LeakyReLU()(x)
 
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
-        """
-        Args:
-            input_dim (int tuple/list): Length, height, layers of input
-            training (bool): True if model is training
-            num_hidden_layers (int): Number of hidden layers
-            lr (float): Learning rate
-            filters (int): num features in output of convolution
-            strides (int tuple/list or int): Stride of convolution
-            padding ("SAME" or "valid"): "SAME" if 0 adding added during convolution
-        """
-        # make sure there is no other graph
-        tf.reset_default_graph()
+		x = Flatten()(x)
 
-        self.lr = lr
-        self.input_dim = input_dim
-        self.num_hidden_layers = num_hidden_layers
-        self.filters = filters
-        self.strides = [1, strides, strides, 1]
-        self.padding = padding
-        self.kernel_size = kernel_size
-        self.policy_head_dim = policy_head_dim
+		x = Dense(
+			self.output_dim
+			, use_bias=False
+			, activation='linear'
+			, kernel_regularizer=regularizers.l2(self.reg_const)
+			, name = 'policy_head'
+			)(x)
 
-        # Create directory, delete if exsited
-        self.create_directory()
+		return (x)
 
-        self.inputs = tf.placeholder(tf.float32, shape=np.append(
-            None, input_dim).tolist())  # Variable batch size
-        self.training = tf.placeholder(tf.bool)
-        self.policy_label = tf.placeholder(tf.float32,
-                                           shape=np.append(None, policy_head_dim).tolist())
-        self.value_label = tf.placeholder(tf.float32, [None, 1])
-        self.hidden_layers = self._build_hidden_layers()
-        self.value_head = self._build_value_head()
-        self.policy_head = self._build_policy_head()
-        self.ce_loss = self._cross_entropy_with_logits() # Why are these here?
-        self.mse_loss = self._mean_sq_error() # ?
-        self.train_op = self.train()
-        self.saver = tf.train.Saver()
+if __name__ == "__main__":
+	nn = NN((2,3,3),2,8)
