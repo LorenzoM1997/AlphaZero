@@ -7,7 +7,7 @@ import os
 import shutil
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 1, filters=32, strides=1, padding="SAME"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -40,6 +40,8 @@ class NN():
                                            shape=np.append(None, policy_head_dim).tolist())
         self.value_label = tf.placeholder(tf.float32, [None, 1])
         self.hidden_layers = self._build_hidden_layers()
+        # self.conv1 = self._conv1()
+        # self.conv2 = self._conv2()
         self.value_head = self._build_value_head()
         self.policy_head = self._build_policy_head()
         self.ce_loss = self._cross_entropy_with_logits()
@@ -66,101 +68,8 @@ class NN():
             os.mkdir(model_saver_path)
         return None
 
-    def _build_hidden_layers(self):
-        """
-        Returns:
-            List of resBlocks
-        """
-        with tf.variable_scope('Residual_Blocks'):
-            hidden_layers = []
 
-            # first convolutional layer is different
-            with tf.variable_scope('Residual_Block_1'):
-                initial_filter = tf.Variable(tf.random_uniform(
-                    [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
-                first_layer = tf.nn.conv2d(
-                    self.inputs, initial_filter, self.strides, self.padding)
-                hidden_layers.append(first_layer)
-
-                resblk = self.resBlock(first_layer, self.filters,
-                    True, strides=self.strides, padding=self.padding)
-                hidden_layers.append(resblk)
-
-            if self.num_hidden_layers > 1:
-                for i in range(self.num_hidden_layers-1):
-                    with tf.variable_scope('Residual_Block_'+str(i+2)):
-                        resblk = self.resBlock(resblk, self.filters, True, self.strides, self.padding)
-
-                    hidden_layers.append(resblk)
-
-        return hidden_layers
-
-    def _build_value_head(self):
-        """
-        Returns:
-            vh_out (tf.dense, units=1): value estimation of current state
-        """
-
-        # goes back from n channels to 1
-        with tf.variable_scope('Value_head'):
-            vh_filter = tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, self.filters, 1]))
-            vh = tf.nn.conv2d(
-                self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
-
-            vh_bn = self.batch_norm(vh, self.training)
-            vh_bn_relu = tf.nn.relu(vh_bn)
-            vh_flat = tf.layers.flatten(vh_bn_relu)
-            vh_dense = tf.layers.dense(
-                inputs=vh_flat,
-                units=20,  # Arbitrary number. Consider decreasing for connect4.
-                use_bias=False,
-                activation=tf.nn.leaky_relu
-            )
-            vh_out = tf.layers.dense(
-                inputs=vh_dense,
-                units=1,
-                use_bias=False,
-                activation=tf.nn.tanh
-            )
-        return vh_out
-
-    def _build_policy_head(self):
-        """
-        Returns:
-            ph_out (tf.dense, units=policy_head_dim): probability distribution 
-        """
-        with tf.variable_scope('Policy_head'):
-
-            # goes back from n channels to 1
-            ph_filter = tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, self.filters, 1]))
-            ph = tf.nn.conv2d(
-                self.hidden_layers[-1], ph_filter, [1, 1, 1, 1], "SAME")
-
-            ph_bn = self.batch_norm(ph, self.training)
-            ph_bn_relu = tf.nn.relu(ph_bn)
-            ph_flat = tf.layers.flatten(ph_bn_relu)
-            ph_dense = tf.layers.dense(
-                inputs=ph_flat,
-                units=self.policy_head_dim,
-                use_bias=False,
-                activation=tf.nn.tanh,
-                name='policy_head'
-            )
-
-        return ph_dense
-
-    def conv2d(self, inputs, channels, strides, padding):
-        return tf.nn.conv2d(
-            input=inputs,
-            filter=tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, channels, channels])),
-            strides=strides,
-            padding=padding,
-        )
-
-    def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.9, BATCH_EPSILON=1e-5):
+    def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.997, BATCH_EPSILON=1e-5):
         return tf.layers.batch_normalization(
             inputs=inputs,
             axis=1,
@@ -170,6 +79,15 @@ class NN():
             scale=True,
             training=training,
             fused=True)
+
+    def conv2d(self, inputs, channels, strides, padding):
+        return tf.nn.conv2d(
+            input=inputs,
+            filter=tf.Variable(tf.random_uniform(
+                [self.kernel_size, self.kernel_size, channels, channels])),
+            strides=strides,
+            padding=padding,
+        )
 
     def resBlock(self, inputs, filters, training, strides=1, padding="SAME"):
         """
@@ -188,12 +106,85 @@ class NN():
         conv2_bn = self.batch_norm(conv2, training)
         y = conv2_bn + shortcut
         y_relu = tf.nn.relu(y)
-        return y_relu
+        return y
+
+    # def _conv1(self):
+    #     filter_tensor=tf.Variable(tf.random_uniform(
+    #             [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
+    #     conv = tf.nn.conv2d(input=self.inputs, filter = filter_tensor, strides=self.strides, padding=self.padding)
+    #     return conv
+
+    # def _conv2(self):
+    #     filter_tensor=tf.Variable(tf.random_uniform(
+    #             [self.kernel_size, self.kernel_size, self.filters, self.filters]))
+    #     conv = tf.nn.conv2d(input=self.conv1, filter = filter_tensor, strides=self.strides, padding=self.padding)
+    #     return conv
+
+    def _build_hidden_layers(self):
+        """
+        Returns:
+            List of resBlocks
+        """
+        hidden_layers = []
+
+        # first convolutional layer is different
+        initial_filter = tf.Variable(tf.random_uniform(
+            [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
+        first_layer = tf.nn.conv2d(
+            self.inputs, initial_filter, self.strides, self.padding)
+        hidden_layers.append(first_layer)
+
+        resblk = self.resBlock(first_layer, self.filters,
+                               True, strides=self.strides, padding=self.padding)
+        hidden_layers.append(resblk)
+        if self.num_hidden_layers > 1:
+            for i in range(self.num_hidden_layers-1):
+                resblk = self.resBlock(
+                    resblk, self.filters, True, self.strides, self.padding)
+                hidden_layers.append(resblk)
+        return hidden_layers
+
+    def _build_value_head(self):
+        """
+        Returns:
+            vh_out (tf.dense, units=1): value estimation of current state
+        """
+
+        # goes back from n channels to 1
+        with tf.variable_scope('Value_head'):
+            vh_bn_relu = tf.nn.relu(self.hidden_layers)
+            vh_flat = tf.layers.flatten(vh_bn_relu)
+            vh_out = tf.layers.dense(
+                inputs=vh_flat,
+                units=1,
+                use_bias=False,
+                activation=tf.nn.leaky_relu
+            )
+        return vh_out
+
+    def _build_policy_head(self):
+        """
+        Returns:
+            ph_out (tf.dense, units=policy_head_dim): probability distribution 
+        """
+        with tf.variable_scope('Policy_head'):
+
+            # goes back from n channels to 1
+            ph_bn_relu = tf.nn.relu(self.hidden_layers)
+            ph_flat = tf.layers.flatten(ph_bn_relu)
+            ph_out = tf.layers.dense(
+                inputs=ph_flat,
+                units=self.policy_head_dim,
+                use_bias=False,
+                activation=tf.nn.sigmoid
+            )
+
+        return ph_out
 
     def _cross_entropy_with_logits(self):
         with tf.variable_scope('Loss_in_policy_head'):
-            loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                logits=self.policy_head, labels=self.policy_label)
+            loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.sigmoid(self.policy_label),
+                logits=self.policy_head)
             loss = tf.reduce_mean(loss)
         return loss
 
@@ -245,6 +236,7 @@ class NN():
         tf.summary.scalar('value_head_loss', self.mse_loss)
         tf.summary.scalar('total_loss', self.loss)
         tf.summary.histogram('ph', self.policy_head)
+        tf.summary.histogram('convolution_layer2', self.conv2)
 
         if opt_type == 'AdamOptimizer':
             optimizer = tf.train.AdamOptimizer(self.lr)
@@ -267,13 +259,16 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
+        #print(os.getcwd())
+        model_saver_path = os.path.join(os.getcwd(), model_saver_path)
+        #print(model_saver_path)
         if not os.path.exists(model_saver_path):
             os.mkdir(model_saver_path)
-        train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
+        
+        final_model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
+        model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
 
-        model_saver_path = os.getcwd() + model_saver_path
-        final_model_saver_path = model_saver_path + 'model.ckpt'
-        model_saver_path += 'model.ckpt'
+        train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
         init = tf.global_variables_initializer()
         summary_op = tf.summary.merge_all()
@@ -340,4 +335,3 @@ class NN():
         vh_pred, ph_pred = self.sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
 
         return [vh_pred, ph_pred]
-

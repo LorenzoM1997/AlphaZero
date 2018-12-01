@@ -5,7 +5,6 @@ import tensorflow as tf
 from nn import *
 from Games.Games import Game
 from Games.TicTacToe import *
-from Games.ConnectFour import *
 from nn import NN
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -25,60 +24,49 @@ def load_data_for_training(game):
 
     X = np.empty((0, game.num_layers, game.num_rows, game.num_cols))  # where input (board state) will be saved
     V = np.empty((0, 1))  # where the value (one of labels) will be saved
-    P = np.empty((0, len(game.action_space)))  # where the policy (one of the labels) will be saved
+    P = []  # where the policy (one of the labels) will be saved
 
     for file in files:
         print(file)
-        try:
-            data = pickle.load(open(mypath+'\\'+file, "rb")
+        data = pickle.load(open(mypath+'/'+file, "rb")
                                )  # load the data from file
-        except:
-            print("Data not found in ", file)
-            continue
+
 
         X_file = np.empty((0, game.num_layers, game.num_rows, game.num_cols))
         V_file = np.empty((0, 1))
-        P_file = np.empty((0, len(game.action_space)))
         for episode in data:
             X_episode = np.empty((len(episode), game.num_layers, game.num_rows, game.num_cols))
             V_episode = np.empty((len(episode), 1))
-            P_episode = np.empty((len(episode), len(game.action_space)))
             for i in range(len(episode)):
                 game.board = episode[i][0]
                 X_episode[i] = game.layers() 
-                P_episode[i] = episode[i][1]
+                P.append(episode[i][1])
                 V_episode[i] = episode[i][2]
 
             X_file = np.append(X_file, X_episode, axis = 0)
             V_file = np.append(V_file, V_episode, axis = 0)
-            P_file = np.append(P_file, P_episode, axis = 0)
 
         X = np.append(X, X_file, axis = 0)
         V = np.append(V, V_file, axis = 0)
-        P = np.append(P, P_file, axis = 0)
         print("Correctly loaded: ", file)
 
     print("Episodes in data_set:", len(V))
     return [X, V, P]
 
-def training_nn(game, nnet, model_path):
+def training_nn(game, nnet):
         """
         Args:
             game: a Game object
             nnet: a NN object
         """
         X, V, P = load_data_for_training(game)
-        assert len(X) == len(V)
-        perm = np.random.permutation(len(X))
-        X = X[perm]
-        V = V[perm]
-        P = P[perm]
+        model_path = './model/checkpoint/' + 'model.ckpt'
 
-        nnet.fit(X, V, P, 100, 1000, model_path)
+        nnet.fit(X, V, P, 64, 100, model_path)
 
 class NetTrainer():
 
-    def __init__(self, game, residual_layers = 5):
+    def __init__(self, game):
         """
         Args:
             game: A Game object
@@ -88,9 +76,10 @@ class NetTrainer():
         input_shape = game.layers().shape
         policy_shape = len(game.action_space)
 
-        self.nnet = NN(input_shape, residual_layers, policy_shape, True)
-        self.path_1 = './model/checkpoint/old/'
-        self.path_2 = './model/checkpoint/new/'
+        self.nnet_1 = NN(input_shape, 1, policy_shape, True)
+        self.path_1 = './model/checkpoint/' + 'old.ckpt'
+        self.nnet_2 = NN(input_shape, 1, policy_shape, True)
+        self.path_2 = './model/checkpoint/' + 'new.ckpt'
 
     def train(self, name):
         """
@@ -98,34 +87,34 @@ class NetTrainer():
             name(string): 'new' or 'old'
         """
         if name == 'old':
-            training_nn(self.game, self.nnet, self.path_1)
+            training_nn(self.game, self.nnet_1)
         elif name == 'new':
-            training_nn(self.game, self.nnet, self.path_2)
+            training_nn(self.game, self.nnet_2)
         else:
             print("invalid name.")
 
         # already prepare for evaluation
+        self.nnet_1.pre_run(self.path_1)
+        self.nnet_2.pre_run(self.path_2)
 
-    def prepare(self, name):
-        if name == 'old':
-            self.nnet.pre_run(self.path_1)
-        elif name == 'new':
-            self.nnet.pre_run(self.path_2)
-        else:
-            print("invalid name.")
-
-    def pred(self, new_input):
+    def pred(self, name, new_input):
         """
         Args:
-            new_input: a layers representation
+            name(string): 'new' or 'old'
+            new_input: a list [X, V, P]
         """
-        return self.nnet.pred(new_input)
+        if name == 'old':
+            self.nnet_1.pred(new_input)
+        elif name == 'new':
+            self.nnet_2.pred(new_input)
+        else:
+            print("invalid name.")
 
 if __name__ == "__main__":
     # IMPORTANT game definition
     game = TicTacToe()
-    Trainer = NetTrainer(game)
-    Trainer.train('old')
-    Trainer.train('new')
+    input_shape = game.layers().shape
+    nnet = NN(input_shape, 1, len(game.action_space), True)
+    training_nn(game, nnet)
 
     
