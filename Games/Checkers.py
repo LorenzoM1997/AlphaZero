@@ -224,7 +224,7 @@ class Checkers(Game):
         Returns true when a player wins (other player has no pieces left)
         or draw.
         """
-        if np.any(self.board == 2):
+        if np.any(self.board == 2) or np.any(self.board == 4):
             return 0
         else:
             self.terminal = True
