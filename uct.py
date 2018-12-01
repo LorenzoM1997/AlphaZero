@@ -90,7 +90,7 @@ class UCT(object):
                 print(self.action_template.format(**m))
 
         # return mcts policy
-        self.policy = np.zeros(len(self.board.action_space))
+        self.policy = np.zeros(len(self.board.action_space)) - 1
         for m in self.data['actions']:
             self.policy[m['action']] = m['average']
 
