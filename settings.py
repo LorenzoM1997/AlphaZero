@@ -7,27 +7,30 @@ import os
 from time import strftime, gmtime
 from os import path
 
+
 def init(game_interface):
     global Trainer
     global ai
     global ai_old
     global name_game
-   
+
     name_game = game_interface.name
     Trainer = NetTrainer(game_interface)
     ai = UCTValues(GameGlue(game_interface))
     ai_old = UCTValues(GameGlue(game_interface))
+
 
 def set_mode(mode, num_simulations, total_episodes):
 
     global save_episodes
     global num_episodes
     global render_game
+    global episode_to_save
 
-    num_episodes = np.ceil(total_episodes / num_simulations)
+    num_episodes = int(np.ceil(total_episodes / num_simulations))
     episode_to_save = 10
 
-    if  mode == 'training':
+    if mode == 'training':
         render_game = False
         save_episodes = True
         ai.DEBUG = False
