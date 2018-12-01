@@ -239,7 +239,7 @@ class Checkers(Game):
       p2_pieces = 0
       for i in range(self.HEIGHT):
         for j in range(self.WIDTH):
-          if self.board[i, j] % 2 == 0:
+          if self.board[i, j] % 2 == 0 and self.board[i, j] > 0:
             p2_pieces += 1
           else:
             p1_pieces += 1
