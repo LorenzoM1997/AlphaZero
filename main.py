@@ -13,13 +13,14 @@ import pickle
 import progressbar
 import random
 import settings
+from settings import set_mode
 import tensorflow as tf
-from time import sleep, strftime, gmtime
+from time import sleep
 from training import *
 import uct
 
 # change the following line to change game
-game_interface = ConnectFour()
+game_interface = TicTacToe()
 game = GameGlue(game_interface)
 
 
@@ -140,87 +141,19 @@ def elo_rating(results, tasks, scores, elo_opponent=0, main_player=random_move, 
 if __name__ == "__main__":
 
     print("Game: ",game_interface.name)
-
-    ai = uct.UCTValues(game)
-    ai_old = uct.UCTValues(game)
-
+    
     settings.init(game_interface)
+
+    # how many processes are you starting in parallel
+    num_simulations = 4
+    total_episodes = 100
 
     #  modes: 'training', 'manual', 'debug', 'evaluation'
     mode = 'training'
+    set_mode(mode, num_simulations, total_episodes)
 
-    if  mode == 'training':
-        render_game = False
-        num_episodes = 4
-        num_simulations = 1
-        episode_to_save = 4
-        save_episodes = True
-        ai.DEBUG = False
-        ai.use_nn = True
-        ai_old.DEBUG = False
-        ai_old.use_nn = True
-
-        print("Mode: training.")
-        print("Parallel simulations: ", num_simulations)
-        print("Total number of episodes: ", num_simulations * num_episodes)
-
-        total_episodes = num_simulations * num_episodes  # total number of episodes
-
-        try:
-            #  file where the episodes are saved
-            filename = 'saved\\' + game.name + \
-                strftime("%Y-%m-%d-", gmtime()) + \
-                str(np.random.randint(100000))
-        except:
-            print("Directory not found")
-            exit()
-
-    elif mode == 'manual':
-        render_game = True
-        num_simulations = 0
-        num_episodes = 10
-        save_episodes = False
-        ai.DEBUG = False
-
-        print("Mode: manual.")
-
-    elif mode == 'debug':
-        render_game = True
-        num_simulations = 1
-        num_episodes = 25
-        save_episodes = True
-        ai.DEBUG = True
-        ai_old.DEBUG = True
-
-        print("Mode: debug.")
-        print("Parallel simulations: ", num_simulations)
-        print("Total number of episodes: ", num_simulations * num_episodes)
-
-    elif mode == 'evaluation':
-        render_game = False
-        num_simulations = 64
-        num_episodes = 1
-        episode_to_save = 40
-        save_episodes = True
-        ai.DEBUG = False
-
-        total_episodes = num_simulations * num_episodes  # total number of episodes
-
-        print("Mode: evaluation")
-        print("Parallel simulations:", num_simulations)
-        print("Total number of episodes:", total_episodes)
-
-        try:
-            #  file where the episodes are saved
-            filename = 'saved\\' + game.name + \
-                strftime("%Y-%m-%d-", gmtime()) + \
-                str(np.random.randint(100000))
-        except:
-            print("[WARNING] Evaluation mode will not be saving files.")
-
-    else:
-        print("mode name not recognized.")
-        exit()
+    from settings import num_episodes, save_episodes, render_game
+    from settings import ai, ai_old
 
     # Define IPC manager
     manager = multiprocessing.Manager()
