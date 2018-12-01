@@ -154,7 +154,7 @@ if __name__ == "__main__":
     set_mode(mode, num_simulations, total_episodes)
 
     from settings import num_episodes, save_episodes, render_game
-    from settings import episode_to_save
+    from settings import episode_to_save, filename
     from settings import ai, ai_old
 
     # Define IPC manager

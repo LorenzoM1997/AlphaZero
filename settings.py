@@ -26,9 +26,22 @@ def set_mode(mode, num_simulations, total_episodes):
     global num_episodes
     global render_game
     global episode_to_save
+    global filename
 
     num_episodes = int(np.ceil(total_episodes / num_simulations))
     episode_to_save = 10
+
+    # create the directory if it doesn't exist
+    if not path.isdir('saved'):
+        os.makedirs('saved')
+
+    try:
+        #  file where the episodes are saved
+        generated_name = name_game + strftime("%Y-%m-%d-", gmtime()) + \
+            str(np.random.randint(100000))
+        filename = path.join('saved', generated_name)
+    except:
+        print("Directory not found")
 
     if mode == 'training':
         render_game = False
@@ -41,15 +54,6 @@ def set_mode(mode, num_simulations, total_episodes):
         print("Mode: training.")
         print("Parallel simulations: ", num_simulations)
         print("Total number of episodes: ", num_simulations * num_episodes)
-
-        try:
-            #  file where the episodes are saved
-            generated_name = name_game + strftime("%Y-%m-%d-", gmtime()) + \
-                str(np.random.randint(100000))
-            filename = path.join('saved', generated_name)
-        except:
-            print("Directory not found")
-            exit()
 
     elif mode == 'manual':
         render_game = True
@@ -76,14 +80,6 @@ def set_mode(mode, num_simulations, total_episodes):
         print("Mode: evaluation")
         print("Parallel simulations:", num_simulations)
         print("Total number of episodes:", total_episodes)
-
-        try:
-            #  file where the episodes are saved
-            generated_name = name_game + strftime("%Y-%m-%d-", gmtime()) + \
-                str(np.random.randint(100000))
-            filename = path.join('saved', generated_name)
-        except:
-            print("[WARNING] Evaluation mode will not be saving files.")
 
     else:
         print("mode name not recognized.")
