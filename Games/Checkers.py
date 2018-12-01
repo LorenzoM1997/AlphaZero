@@ -106,7 +106,8 @@ class Checkers(Game):
         if len(loc) == 0 or loc[0] < 0 or loc[0] > self.HEIGHT - 1 or loc[1] < 0 or \
                 loc[1] > self.WIDTH - 1:
             return True
-        return False
+        else:
+            return False
 
     def get_spot_info(self, loc):
         """
@@ -223,27 +224,11 @@ class Checkers(Game):
         Returns true when a player wins (other player has no pieces left)
         or draw.
         """
-
-        # count player 1 and 2 pieces
-        p1_pieces = 0
-        p2_pieces = 0
-        for i in range(self.HEIGHT):
-            for j in range(self.WIDTH):
-                if self.board[i, j] % 2 == 0 and self.board[i, j] > 0:
-                    p2_pieces += 1
-                elif self.board[i,j] %2 == 1:
-                    p1_pieces += 1
-
-        # check for win
-        if p2_pieces == 0:
+        if np.any(self.board == 2):
+            return 0
+        else:
             self.terminal = True
-            return 1  # player one wins
-
-        if p1_pieces == 0:
-            self.terminal = True
-            return -1  # player two wins
-
-        return 0
+            return 1
 
     def get_piece_locations(self):
         """
