@@ -231,7 +231,7 @@ class Checkers(Game):
             for j in range(self.WIDTH):
                 if self.board[i, j] % 2 == 0 and self.board[i, j] > 0:
                     p2_pieces += 1
-                else:
+                elif self.board[i,j] %2 == 1:
                     p1_pieces += 1
 
         # check for win
@@ -292,7 +292,7 @@ class Checkers(Game):
         """
         Makes a given move on the board, and (as long as is wanted) switches the indicator for which players turn it is.
         """
-        if self.legal_moves():
+        if not self.legal_moves():
             self.terminal = True
             return -1
         move = self.action_to_move(action)
@@ -326,10 +326,6 @@ class Checkers(Game):
         self.board[move[0][0]][move[0][1]] = self.EMPTY_SPOT
 
         self.moves_taken += 1
-        if self.legal_moves():
-            self.terminal = True
-            return -1
-
         return self.check_win_conditions()
 
     def get_symbol(self, location):
