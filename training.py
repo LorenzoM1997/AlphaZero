@@ -6,8 +6,7 @@ from nn import *
 from Games.Games import Game
 from Games.TicTacToe import *
 from Games.ConnectFour import *
-#from nn import NN
-from nn_example import NN
+from nn import NN
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
