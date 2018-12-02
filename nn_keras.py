@@ -28,8 +28,10 @@ class NN():
 		return x
 
 	def _create_model(self):
+		""" reteurns the result of one convolution
+		"""
 		input_layer = Input(shape=self.input_dim, name='input_layer')
-		x = self._conv2d(input_layer, 8, 1, LeakyReLU(), None)
+		x = self._conv2d(input_layer, 32, 2, LeakyReLU(), None)
 		return x
 
 	def policy_head(self, x):
