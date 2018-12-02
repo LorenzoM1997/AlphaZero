@@ -5,6 +5,7 @@ from math import log, sqrt
 from random import choice
 
 
+
 class Stat(object):
     __slots__ = ('value', 'visits')
 
@@ -72,7 +73,7 @@ class UCT(object):
             if games >= 1600:
                 break
             self.run_simulation(names, inputs, outputs)
-            games += 1  
+            games += 1
 
         names.put('done')
 
@@ -91,6 +92,7 @@ class UCT(object):
 
         # return mcts policy
         self.policy = np.zeros(len(self.board.action_space)) - 1
+
         for m in self.data['actions']:
             self.policy[m['action']] = m['average']
 
@@ -189,4 +191,3 @@ class UCTValues(UCT):
             key=lambda x: (x['average'], x['plays']),
             reverse=True
         )
-
