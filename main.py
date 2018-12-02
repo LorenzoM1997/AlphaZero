@@ -13,13 +13,14 @@ import pickle
 import progressbar
 import random
 import settings
+from settings import set_mode
 import tensorflow as tf
-from time import sleep, strftime, gmtime
+from time import sleep
 from training import *
 import uct
 
 # change the following line to change game
-game_interface = ConnectFour()
+game_interface = TicTacToe()
 game = GameGlue(game_interface)
 
 
@@ -65,7 +66,8 @@ def ai_move(ai, names, inputs, outputs, mode='testing'):
     ai.update(game.state)
     if mode == 'training':
         #  during training we are using some randomization
-        action, policy = epsilon_greedy(partial(ai.get_action, names, inputs, outputs))
+        action, policy = epsilon_greedy(
+            partial(ai.get_action, names, inputs, outputs))
         if np.all(policy == 1):
             # overwrite the policy if it didn't make a random move
             policy = ai.policy
@@ -139,88 +141,21 @@ def elo_rating(results, tasks, scores, elo_opponent=0, main_player=random_move, 
 
 if __name__ == "__main__":
 
-    print("Game: ",game_interface.name)
-
-    ai = uct.UCTValues(game)
-    ai_old = uct.UCTValues(game)
+    print("Game: ", game_interface.name)
 
     settings.init(game_interface)
 
+    # how many processes are you starting in parallel
+    num_simulations = 4
+    total_episodes = 100
+
     #  modes: 'training', 'manual', 'debug', 'evaluation'
-    mode = 'training'
+    mode = 'evaluation'
+    set_mode(mode, num_simulations, total_episodes)
 
-    if  mode == 'training':
-        render_game = False
-        num_episodes = 4
-        num_simulations = 1
-        episode_to_save = 4
-        save_episodes = True
-        ai.DEBUG = False
-        ai.use_nn = True
-        ai_old.DEBUG = False
-        ai_old.use_nn = True
-
-        print("Mode: training.")
-        print("Parallel simulations: ", num_simulations)
-        print("Total number of episodes: ", num_simulations * num_episodes)
-
-        total_episodes = num_simulations * num_episodes  # total number of episodes
-
-        try:
-            #  file where the episodes are saved
-            filename = 'saved\\' + game.name + \
-                strftime("%Y-%m-%d-", gmtime()) + \
-                str(np.random.randint(100000))
-        except:
-            print("Directory not found")
-            exit()
-
-    elif mode == 'manual':
-        render_game = True
-        num_simulations = 0
-        num_episodes = 10
-        save_episodes = False
-        ai.DEBUG = False
-
-        print("Mode: manual.")
-
-    elif mode == 'debug':
-        render_game = True
-        num_simulations = 1
-        num_episodes = 25
-        save_episodes = True
-        ai.DEBUG = True
-        ai_old.DEBUG = True
-
-        print("Mode: debug.")
-        print("Parallel simulations: ", num_simulations)
-        print("Total number of episodes: ", num_simulations * num_episodes)
-
-    elif mode == 'evaluation':
-        render_game = False
-        num_simulations = 64
-        num_episodes = 1
-        episode_to_save = 40
-        save_episodes = True
-        ai.DEBUG = False
-
-        total_episodes = num_simulations * num_episodes  # total number of episodes
-
-        print("Mode: evaluation")
-        print("Parallel simulations:", num_simulations)
-        print("Total number of episodes:", total_episodes)
-
-        try:
-            #  file where the episodes are saved
-            filename = 'saved\\' + game.name + \
-                strftime("%Y-%m-%d-", gmtime()) + \
-                str(np.random.randint(100000))
-        except:
-            print("[WARNING] Evaluation mode will not be saving files.")
-
-    else:
-        print("mode name not recognized.")
-        exit()
+    from settings import num_episodes, save_episodes, render_game
+    from settings import episode_to_save, filename
+    from settings import ai, ai_old
 
     # Define IPC manager
     manager = multiprocessing.Manager()
@@ -251,7 +186,8 @@ if __name__ == "__main__":
         processes = []
         for i in range(num_simulations):
             new_process = multiprocessing.Process(target=simulation, args=(
-                results, tasks, partial(ai_move, ai, command_list[i], input_list[i], output_list[i]),
+                results, tasks, partial(
+                    ai_move, ai, command_list[i], input_list[i], output_list[i]),
                 partial(ai_move, ai_old, command_list[i], input_list[i], output_list[i]), render_game, save_episodes,))
             processes.append(new_process)
             new_process.start()
@@ -277,7 +213,7 @@ if __name__ == "__main__":
         processes = []
         for i in range(num_simulations):
             new_process = multiprocessing.Process(target=elo_rating, args=(
-                            results, tasks, scores, prev_elo, partial(ai_move, ai, command_list[i], input_list[i], output_list[i]), random_move, ))
+                results, tasks, scores, prev_elo, partial(ai_move, ai, command_list[i], input_list[i], output_list[i]), random_move, ))
             processes.append(new_process)
             new_process.start()
 
@@ -300,16 +236,16 @@ if __name__ == "__main__":
             if num_finished_simulations == total_episodes:
 
                 for s in range(num_simulations):
-                    score = scores.get() 
+                    score = scores.get()
                     elo = elo - score
-                elo = elo/ num_simulations
+                elo = elo / num_simulations
                 print('elo:', elo)
 
                 pickle.dump(memory, open(filename, "wb"))
 
             if num_finished_simulations % episode_to_save == 0 and num_finished_simulations > 0:
                 pickle.dump(memory, open(filename, "wb"))
-          
+
         bar.finish()
 
     elif mode == 'training':
@@ -324,7 +260,7 @@ if __name__ == "__main__":
                                       widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
 
-        while True: 
+        while True:
 
             if not training:
 
@@ -339,7 +275,8 @@ if __name__ == "__main__":
                     processes = []
                     for i in range(num_simulations):
                         new_process = multiprocessing.Process(target=elo_rating, args=(
-                            results, tasks, scores, prev_elo, partial(ai_move, ai, command_list[i], input_list[i], output_list[i]),
+                            results, tasks, scores, prev_elo, partial(
+                                ai_move, ai, command_list[i], input_list[i], output_list[i]),
                             partial(ai_move, ai_old, command_list[i], input_list[i], output_list[i]), ))
                         processes.append(new_process)
                         new_process.start()
@@ -348,14 +285,14 @@ if __name__ == "__main__":
                 settings.Trainer.prepare('new')
                 while True:
                     try:
-                        new_result = results.get(block = False)
+                        new_result = results.get(block=False)
                         break
                     except:
                         pass
 
                     for i in range(len(command_list)):
                         try:
-                            name = command_list[i].get(block = False)
+                            name = command_list[i].get(block=False)
                         except:
                             continue
                         if name == 'done':
@@ -372,9 +309,9 @@ if __name__ == "__main__":
                 if num_finished_simulations == total_episodes:
 
                     for s in range(num_simulations):
-                        score = scores.get() 
+                        score = scores.get()
                         elo = elo - score
-                    elo = elo/ num_simulations
+                    elo = elo / num_simulations
                     print('elo:', elo)
 
                     # save memory
