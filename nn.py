@@ -145,8 +145,7 @@ class NN():
                 inputs=ph_flat,
                 units=self.policy_head_dim,
                 use_bias=False,
-                activation=tf.nn.tanh,
-                name='policy_head'
+                activation=tf.nn.tanh
             )
 
         return ph_dense
@@ -193,7 +192,7 @@ class NN():
     def _cross_entropy_with_logits(self):
         with tf.variable_scope('Loss_in_policy_head'):
             loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                logits=self.policy_head, labels=self.policy_label)
+                logits=self.policy_head, labels=tf.sigmoid(self.policy_label))
             loss = tf.reduce_mean(loss)
         return loss
 
@@ -303,7 +302,7 @@ class NN():
                 feed_dict = {self.inputs: batch_X, 
                              self.value_label: batch_Y, 
                              self.policy_label: batch_Z, 
-                             self.training: True}
+                             self.training: False}
 
                 sess.run(self.train_op, feed_dict=feed_dict)
 
