@@ -60,7 +60,6 @@ class UCT(object):
 
         state = self.history[-1]
         legal = self.board.legal_actions(state)
-        legal = [[int(float(j)) for j in i] for i in legal]  # cast to int
 
         # Bail out early if there is no real choice to be made.
         if not legal:
