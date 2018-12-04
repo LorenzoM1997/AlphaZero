@@ -152,7 +152,7 @@ class Checkers(Game):
         Gets the possible moves a piece can make given that it does not capture any
         opponents pieces.
         """
-        if self.board[start_loc[0]][start_loc[1]] == 2:
+        if self.board[start_loc[0], start_loc[1]] == self.P1_K:
             next_locations = self.forward_n_locations(start_loc, 1)
             next_locations.extend(self.forward_n_locations(start_loc, 1, True))
         else:
@@ -210,7 +210,7 @@ class Checkers(Game):
                                 temp_board = Checkers(
                                     copy.deepcopy(self.board))
                                 temp_board.step(
-                                    self.move_to_action(temp_move2))
+                                    self.move_to_action(temp_move2), True)
 
                                 answer.extend(temp_board.get_capture_moves(
                                     temp_move2[1], temp_move1))
@@ -224,11 +224,24 @@ class Checkers(Game):
         Returns true when a player wins (other player has no pieces left)
         or draw.
         """
+        if not self.check_ahead():
+            self.terminal = True
+            return 1
+
         if np.any(self.board == 2) or np.any(self.board == 4):
             return 0
         else:
             self.terminal = True
             return 1
+
+    def check_ahead(self):
+        """
+        Check get the legal moves one move ahead.
+        """
+        temp_game = Checkers(copy.deepcopy(self.board))
+        temp_game.invert_board()
+        return temp_game.legal_moves()
+
 
     def get_piece_locations(self):
         """
@@ -246,7 +259,7 @@ class Checkers(Game):
         """
         for j in range(self.HEIGHT):
             for i in range(self.WIDTH):
-                if self.board[j][i] == self.P1:
+                if self.board[j][i] == self.P1 or self.board[j][i] == self.P1_K:
                     piece_locations.append([j, i])
 
         return piece_locations
@@ -257,8 +270,12 @@ class Checkers(Game):
         """
         actions = []
         piece_locations = self.get_piece_locations()
-        capture_moves = list(
-            reduce(lambda a, b: a + b, list(map(self.get_capture_moves, piece_locations))))
+        capture_moves = []
+        try:
+            capture_moves = list(reduce(lambda a, b: a + b, list(map(
+                self.get_capture_moves, piece_locations))))
+        except:
+            capture_moves = []
 
         if len(capture_moves) != 0:
             actions = np.zeros((len(capture_moves), 2))
@@ -266,22 +283,28 @@ class Checkers(Game):
                 actions[i] = self.move_to_action(capture_moves[i])
             return actions.tolist()
 
-        moves = list(reduce(lambda a, b: a + b,
-                            list(map(self.get_simple_moves, piece_locations))))
+        moves = []
+        try:
+            moves = list(reduce(lambda a, b: a + b,
+                                list(map(self.get_simple_moves, piece_locations))))
+        except:
+            moves = []
         actions = np.zeros((len(moves), 2))
         for i in range(len(moves)):
             actions[i] = self.move_to_action(moves[i])
-        return actions.tolist()
+        # print(actions.tolist())
+        return actions.astype(int).tolist()
 
-    def step(self, action):
+    def step(self, action, is_capture_temp=False):
         """
         Makes a given move on the board, and (as long as is wanted) switches the indicator for which players turn it is.
         """
-        if not self.legal_moves():
-            self.terminal = True
-            return -1
+        if not is_capture_temp:
+            if not self.legal_moves():
+                self.terminal = True
+                return -1
         move = self.action_to_move(action)
-        if abs(move[0][0] - move[1][0]) == 2:
+        if abs(int(move[0][0]) - int(move[1][0])) == 2:
             for j in range(len(move) - 1):
                 if move[j][0] % 2 == 1:
                     if move[j + 1][1] < move[j][1]:
