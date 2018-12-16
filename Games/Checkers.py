@@ -15,7 +15,7 @@ class Checkers(Game):
     WIDTH = 4
     MAX_MOVES = 150
 
-    Symbols = [' ','o','O','X','x']
+    Symbols = [' ', 'o', 'O', 'X', 'x']
 
     def __init__(self, old_spots=None):
         """
@@ -33,7 +33,7 @@ class Checkers(Game):
                                             self.EMPTY_SPOT, self.P2, self.P2, self.P2]]
         else:
             spots = old_spots
-        self.board = np.array(spots, dtype = np.uint8)
+        self.board = np.array(spots, dtype=np.uint8)
 
         # initialize action space
         action_space = np.zeros((32, 32, 2), dtype=np.uint8)
@@ -129,11 +129,11 @@ class Checkers(Game):
             answer[1][0] = answer[1][0] + n
 
         if self.not_spot(answer[0]):
-            answer[0] = []
-        if self.not_spot(answer[1]):
-            answer[1] = []
-
-        return answer
+            return [answer[1]]
+        elif self.not_spot(answer[1]):
+            return [answer[0]]
+        else:
+            return answer
 
     def get_simple_moves(self, start_loc):
         """
@@ -141,15 +141,14 @@ class Checkers(Game):
         opponents pieces.
         """
         next_locations = self.forward_n_locations(start_loc, 1)
-        if self.board[start_loc[0], start_loc[1]] == self.P1_K:
+        if self.get_spot_info(start_loc) == self.P1_K:
             next_locations.extend(self.forward_n_locations(start_loc, 1, True))
 
         possible_next_locations = []
 
         for location in next_locations:
-            if len(location) != 0:
-                if self.board[location[0]][location[1]] == self.EMPTY_SPOT:
-                    possible_next_locations.append(location)
+            if self.get_spot_info(location) == self.EMPTY_SPOT:
+                possible_next_locations.append(location)
 
         return [[start_loc, end_spot] for end_spot in possible_next_locations]
 
@@ -186,7 +185,8 @@ class Checkers(Game):
                             temp_move2 = [start_loc, next2[j]]
 
                             temp_board = Checkers(copy.deepcopy(self.board))
-                            temp_board.step(self.move_to_action(temp_move2), True)
+                            temp_board.step(
+                                self.move_to_action(temp_move2), True)
 
                             answer.extend(temp_board.get_capture_moves(
                                 temp_move2[1], temp_move1))
@@ -220,12 +220,12 @@ class Checkers(Game):
         temp_game.invert_board()
         return temp_game.legal_moves()
 
-
     def get_piece_locations(self):
         """
         Gets all the pieces of the current player
         """
-        piece_locations = np.argwhere(self.board == self.P1).tolist() + np.argwhere(self.board == self.P1_K).tolist()
+        piece_locations = np.argwhere(self.board == self.P1).tolist(
+        ) + np.argwhere(self.board == self.P1_K).tolist()
         return piece_locations
 
     def legal_moves(self):
@@ -314,7 +314,8 @@ class Checkers(Game):
             else:
                 temp_line += "|"
             for i in range(self.WIDTH):
-                temp_line = temp_line + " " +  self.Symbols[self.board[j, i]]  + " |"
+                temp_line = temp_line + " " + \
+                    self.Symbols[self.board[j, i]] + " |"
                 if i != 3 or j % 2 != 1:
                     temp_line = temp_line + "///|"
             print(temp_line)
