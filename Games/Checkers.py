@@ -8,18 +8,14 @@ from Games.Games import Game
 class Checkers(Game):
     EMPTY_SPOT = 0
     P1 = 1
-    P2 = 2
-    P1_K = 3
-    P2_K = 4
-    BACKWARDS_PLAYER = P2
+    P2 = 4
+    P1_K = 2
+    P2_K = 3
     HEIGHT = 8
     WIDTH = 4
     MAX_MOVES = 150
 
-    P1_SYMBOL = 'o'
-    P1_K_SYMBOL = 'O'
-    P2_SYMBOL = 'x'
-    P2_K_SYMBOL = 'X'
+    Symbols = [' ','o','O','X','x']
 
     def __init__(self, old_spots=None):
         """
@@ -37,7 +33,7 @@ class Checkers(Game):
                                             self.EMPTY_SPOT, self.P2, self.P2, self.P2]]
         else:
             spots = old_spots
-        self.board = np.array(spots)
+        self.board = np.array(spots, dtype = np.uint8)
 
         # initialize action space
         action_space = np.zeros((32, 32, 2), dtype=np.uint8)
@@ -51,7 +47,7 @@ class Checkers(Game):
         """
         Converts tile index to row col index.
         """
-        row = np.floor(tile / self.WIDTH)
+        row = math.floor(tile / self.WIDTH)
         col = tile % self.WIDTH
         return np.array([row, col])
 
@@ -59,9 +55,7 @@ class Checkers(Game):
         """
         Converts tile index to row col index.
         """
-        row = row_col[0]
-        col = row_col[1]
-        tile = self.WIDTH * row + col
+        tile = self.WIDTH * row_col[0] + row_col[1]
         return tile
 
     def action_to_move(self, action):
@@ -89,15 +83,9 @@ class Checkers(Game):
 
     def invert_board(self):
         """
-        Toggles the player.
+        Rotate the board
         """
-        new_board = np.zeros(self.board.shape)
-        new_board[self.board == 1] = 2
-        new_board[self.board == 2] = 1
-        new_board[self.board == 3] = 4
-        new_board[self.board == 4] = 3
-        self.board = new_board
-        self.board = np.rot90(self.board, 2)
+        self.board = np.rot90((5 - self.board) % 5, 2)
 
     def not_spot(self, loc):
         """
@@ -152,11 +140,9 @@ class Checkers(Game):
         Gets the possible moves a piece can make given that it does not capture any
         opponents pieces.
         """
+        next_locations = self.forward_n_locations(start_loc, 1)
         if self.board[start_loc[0], start_loc[1]] == self.P1_K:
-            next_locations = self.forward_n_locations(start_loc, 1)
             next_locations.extend(self.forward_n_locations(start_loc, 1, True))
-        else:
-            next_locations = self.forward_n_locations(start_loc, 1)
 
         possible_next_locations = []
 
@@ -176,24 +162,19 @@ class Checkers(Game):
             move_beginnings = [start_loc]
 
         answer = []
-        if self.board[start_loc[0]][start_loc[1]] > 2:
-            next1 = self.forward_n_locations(start_loc, 1)
-            next2 = self.forward_n_locations(start_loc, 2)
+
+        next1 = self.forward_n_locations(start_loc, 1)
+        next2 = self.forward_n_locations(start_loc, 2)
+        if self.get_spot_info(start_loc) == self.P1_K:
+            # go also backwards if is a king
             next1.extend(self.forward_n_locations(start_loc, 1, True))
             next2.extend(self.forward_n_locations(start_loc, 2, True))
-        elif self.board[start_loc[0]][start_loc[1]] == self.BACKWARDS_PLAYER:
-            next1 = self.forward_n_locations(start_loc, 1, True)
-            next2 = self.forward_n_locations(start_loc, 2, True)
-        else:
-            next1 = self.forward_n_locations(start_loc, 1)
-            next2 = self.forward_n_locations(start_loc, 2)
 
         for j in range(len(next1)):
             # if both spots exist
             if (not self.not_spot(next2[j])) and (not self.not_spot(next1[j])):
                 # if next spot is opponent
-                if self.get_spot_info(next1[j]) != self.EMPTY_SPOT and \
-                        self.get_spot_info(next1[j]) % 2 != self.get_spot_info(start_loc) % 2:
+                if self.get_spot_info(next1[j]) in [self.P2, self.P2_K]:
                     # if next next spot is empty
                     if self.get_spot_info(next2[j]) == self.EMPTY_SPOT:
                         temp_move1 = copy.deepcopy(move_beginnings)
@@ -201,19 +182,14 @@ class Checkers(Game):
 
                         answer_length = len(answer)
 
-                        if self.get_spot_info(start_loc) != self.P1 or \
-                                next2[j][0] != self.HEIGHT - 1:
-                            if self.get_spot_info(start_loc) != self.P2 or next2[j][0] != 0:
+                        if next2[j][0] != self.HEIGHT - 1 or self.get_spot_info(start_loc) == self.P1_K:
+                            temp_move2 = [start_loc, next2[j]]
 
-                                temp_move2 = [start_loc, next2[j]]
+                            temp_board = Checkers(copy.deepcopy(self.board))
+                            temp_board.step(self.move_to_action(temp_move2), True)
 
-                                temp_board = Checkers(
-                                    copy.deepcopy(self.board))
-                                temp_board.step(
-                                    self.move_to_action(temp_move2), True)
-
-                                answer.extend(temp_board.get_capture_moves(
-                                    temp_move2[1], temp_move1))
+                            answer.extend(temp_board.get_capture_moves(
+                                temp_move2[1], temp_move1))
 
                         if len(answer) == answer_length:
                             answer.append(temp_move1)
@@ -228,9 +204,11 @@ class Checkers(Game):
             self.terminal = True
             return 1
 
-        if np.any(self.board == 2) or np.any(self.board == 4):
+        if np.any(self.board == self.P2) or np.any(self.board == self.P2_K):
+            # if the other player has still pieces left
             return 0
         else:
+            # if the other player has no pieces left
             self.terminal = True
             return 1
 
@@ -247,21 +225,7 @@ class Checkers(Game):
         """
         Gets all the pieces of the current player
         """
-        piece_locations = []
-        """
-        for j in range(self.HEIGHT):
-            for i in range(self.WIDTH):
-                if (self.player_turn == True and
-                    (self.board[j][i] == self.P1 or self.board[j][i] == self.P1_K)) or \
-                (self.player_turn == False and
-                    (self.board[j][i] == self.P2 or self.board[j][i] == self.P2_K)):
-                    piece_locations.append([j, i])
-        """
-        for j in range(self.HEIGHT):
-            for i in range(self.WIDTH):
-                if self.board[j][i] == self.P1 or self.board[j][i] == self.P1_K:
-                    piece_locations.append([j, i])
-
+        piece_locations = np.argwhere(self.board == self.P1).tolist() + np.argwhere(self.board == self.P1_K).tolist()
         return piece_locations
 
     def legal_moves(self):
@@ -278,10 +242,10 @@ class Checkers(Game):
             capture_moves = []
 
         if len(capture_moves) != 0:
-            actions = np.zeros((len(capture_moves), 2))
-            for i in range(len(capture_moves)):
-                actions[i] = self.move_to_action(capture_moves[i])
-            return actions.tolist()
+            actions = []
+            for capture_move in capture_moves:
+                actions.append(self.move_to_action(capture_move))
+            return actions
 
         moves = []
         try:
@@ -299,10 +263,6 @@ class Checkers(Game):
         """
         Makes a given move on the board, and (as long as is wanted) switches the indicator for which players turn it is.
         """
-        if not is_capture_temp:
-            if not self.legal_moves():
-                self.terminal = True
-                return -1
         move = self.action_to_move(action)
         if abs(int(move[0][0]) - int(move[1][0])) == 2:
             for j in range(len(move) - 1):
@@ -320,36 +280,19 @@ class Checkers(Game):
                 self.board[int((move[j][0] + move[j + 1][0]) / 2)
                            ][middle_y] = self.EMPTY_SPOT
 
-        self.board[move[len(move) - 1][0]][move[len(move) - 1]
-                                           [1]] = self.board[move[0][0]][move[0][1]]
-        if move[len(move) - 1][0] == self.HEIGHT - 1 and self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] == self.P1:
-            self.board[move[len(move) - 1][0]
-                       ][move[len(move) - 1][1]] = self.P1_K
-        elif move[len(move) - 1][0] == 0 and self.board[move[len(move) - 1][0]][move[len(move) - 1][1]] == self.P2:
-            self.board[move[len(move) - 1][0]
-                       ][move[len(move) - 1][1]] = self.P2_K
+        x_end = move[len(move) - 1][0]
+        y_end = move[len(move) - 1][1]
+
+        # move it
+        if x_end == self.HEIGHT - 1:
+            self.board[x_end][y_end] = self.P1_K
         else:
-            self.board[move[len(move) - 1][0]][move[len(move) - 1]
-                                               [1]] = self.board[move[0][0]][move[0][1]]
+            self.board[x_end][y_end] = self.board[move[0][0]][move[0][1]]
+
         self.board[move[0][0]][move[0][1]] = self.EMPTY_SPOT
 
         self.moves_taken += 1
         return self.check_win_conditions()
-
-    def get_symbol(self, location):
-        """
-        Gets the symbol for what should be at a board location.
-        """
-        if self.board[location[0]][location[1]] == self.EMPTY_SPOT:
-            return " "
-        elif self.board[location[0]][location[1]] == self.P1:
-            return self.P1_SYMBOL
-        elif self.board[location[0]][location[1]] == self.P2:
-            return self.P2_SYMBOL
-        elif self.board[location[0]][location[1]] == self.P1_K:
-            return self.P1_K_SYMBOL
-        else:
-            return self.P2_K_SYMBOL
 
     def render(self):
         """
@@ -371,7 +314,7 @@ class Checkers(Game):
             else:
                 temp_line += "|"
             for i in range(self.WIDTH):
-                temp_line = temp_line + " " + self.get_symbol([j, i]) + " |"
+                temp_line = temp_line + " " +  self.Symbols[self.board[j, i]]  + " |"
                 if i != 3 or j % 2 != 1:
                     temp_line = temp_line + "///|"
             print(temp_line)
