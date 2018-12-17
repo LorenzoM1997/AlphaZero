@@ -25,15 +25,24 @@ game = GameGlue(game_interface)
 
 
 def random_move():
+    """
+    returns a random move in a specific game and a policy vector of all zeros
+    """
     global game
     a = np.random.randint(len(game.legal_moves()))
     action = game.legal_moves()[a]
     return [action, np.zeros(len(game.action_space))]
 
 
-def epsilon_greedy(greedy_move):
+def epsilon_greedy(greedy_move, epsilon = 0.05):
+    """
+    args:
+        greedy_move (method that returns an action
+        epsilon (float between 0 and 1)
+
+    selects either a random move or the greedy move
+    """
     global game
-    epsilon = 0.05
     if random.random() < epsilon:
         action, policy = random_move()
     else:
@@ -46,6 +55,12 @@ def epsilon_greedy(greedy_move):
 
 
 def manual_move():
+    """
+    selects an action given a keyboard input
+    
+    FIXME: it does not work with checkers because the actions
+    are not integers and are in the form [a,b]
+    """
     global game
     try:
         action = int(input())
@@ -61,25 +76,40 @@ def manual_move():
     return [action, np.zeros(len(game.action_space))]
 
 
-def ai_move(ai, names, inputs, outputs, mode='testing'):
+def ai_move(ai, names, inputs, outputs):
+    """
+    args:
+        ai (uct object)
+        names (multiprocessing.Manager().Queue)
+        inputs (multiprocessing.Manager().Queue)
+        output (multiprocessing.Manager().Queue)
+
+    returns an actions selected by the monte carlo tree search
+    the queues are used to interact with the neural networks
+    """
     global game
     ai.update(game.state)
-    if mode == 'training':
-        #  during training we are using some randomization
-        action, policy = epsilon_greedy(
-            partial(ai.get_action, names, inputs, outputs))
-        if np.all(policy == 1):
-            # overwrite the policy if it didn't make a random move
-            policy = ai.policy
-    else:
-        #  in evaluation we are taking the greedy action
-        action = ai.get_action(names, inputs, outputs)
-        policy = ai.policy
+    #  in evaluation we are taking the greedy action
+    action = ai.get_action(names, inputs, outputs)
+    policy = ai.policy
     return [action, policy]
 
 
 def simulation(results, tasks, main_player=random_move, opponent=random_move,
                render=True, save_episodes=False, evaluation=False):
+    """
+    args:
+        results (Queue)
+        tasks (Queue)
+        main_player (method that chooses an action)
+        opponent (method that chooses an action)
+        render (bool) whether we are displaying the board
+        save_episodes (bool) whether we are saving the episodes
+        evaluation (bool) whether we are keeping the score
+
+    runs a certain number of games, where at each step either the main player
+    or the opponent perform a move
+    """
 
     global game
 
@@ -133,9 +163,19 @@ def simulation(results, tasks, main_player=random_move, opponent=random_move,
 
 
 def elo_rating(results, tasks, scores, elo_opponent=0, main_player=random_move, opponent=random_move):
+    """
+    args:
+        results (Queue) where we keep the data to save
+        tasks (Queue) where we keep the number of episodes
+        scores (Queue) where we keep the score
+        elo_opponent (int) known ELO rating of the opponent
+        main_player (method)
+        opponent (method)
+    """
     reward, episodes = simulation(results, tasks, main_player, opponent,
                                   render=False, save_episodes=True, evaluation=True)
     elo = (reward * 400) / episodes + elo_opponent
+    # push the ELO rating in the scores queue
     scores.put(elo)
 
 
