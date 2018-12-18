@@ -112,8 +112,8 @@ class NN():
             vh_dense = tf.layers.dense(
                 inputs=vh_flat,
                 # Arbitrary number. Consider decreasing for connect4.
-                units=20,
-                use_bias=False,
+                units=10,
+                use_bias=True,
                 activation=tf.nn.leaky_relu
             )
             tf.summary.histogram('vh_dense', vh_dense)
