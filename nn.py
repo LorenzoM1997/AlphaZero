@@ -8,7 +8,7 @@ import shutil
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size=1, filters=32, strides=1, padding="same"):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size=3, filters=32, strides=1, padding="same"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -34,8 +34,8 @@ class NN():
         # Create directory, delete if exsited
         self.create_directory()
 
-        self.inputs = tf.sigmoid(tf.placeholder(tf.float32, shape=np.append(
-            None, input_dim).tolist()))  # Variable batch size
+        self.inputs = tf.placeholder(tf.float32, shape=np.append(
+            None, input_dim).tolist())  # Variable batch size
 
         self.training = tf.placeholder(tf.bool)
         self.policy_label = tf.placeholder(tf.float32,
@@ -78,8 +78,7 @@ class NN():
 
             # first convolutional layer is different
             with tf.variable_scope('Residual_Block_1'):
-                first_layer = tf.layers.conv2d(
-                    self.inputs, self.filters, self.kernel_size)
+                first_layer = self.conv2d(self.inputs)
                 hidden_layers.append(first_layer)
 
                 resblk = self.resBlock(first_layer, self.filters,
@@ -91,6 +90,8 @@ class NN():
                     with tf.variable_scope('Residual_Block_'+str(i+2)):
                         resblk = self.resBlock(
                             resblk, self.filters, True, self.strides, self.padding)
+                    
+                    tf.summary.histogram('residual_block_'+str(i+2), resblk)
 
                     hidden_layers.append(resblk)
 
@@ -104,11 +105,7 @@ class NN():
 
         # goes back from n channels to 1
         with tf.variable_scope('Value_head'):
-            vh_filter = tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, self.filters, 1]))
-            vh = tf.nn.conv2d(
-                self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
-
+            vh = self.conv2d(self.hidden_layers[-1])
             vh_bn = self.batch_norm(vh, self.training)
             vh_bn_relu = tf.nn.relu(vh_bn)
             vh_flat = tf.layers.flatten(vh_bn_relu)
@@ -119,12 +116,14 @@ class NN():
                 use_bias=False,
                 activation=tf.nn.leaky_relu
             )
+            tf.summary.histogram('vh_dense', vh_dense)
             vh_out = tf.layers.dense(
                 inputs=vh_dense,
                 units=1,
                 use_bias=True,
                 activation=tf.nn.tanh
             )
+            tf.summary.histogram('vh_out', vh_out)
         return vh_out
 
     def _build_policy_head(self):
@@ -135,29 +134,34 @@ class NN():
         with tf.variable_scope('Policy_head'):
 
             # goes back from n channels to 1
-            ph = tf.layers.conv2d(
-                self.hidden_layers[-1], 32, 3, padding="same")
+            ph = self.conv2d(self.hidden_layers[-1])
             ph_bn = self.batch_norm(ph, self.training)
             ph_bn_relu = tf.nn.relu(ph_bn)
             ph_flat = tf.layers.flatten(ph_bn_relu)
             ph_dense_1 = tf.layers.dense(
                 inputs=ph_flat,
-                units=self.policy_head_dim,
+                units=20,
                 use_bias=True,
-                activation=tf.nn.tanh
+                activation=tf.nn.leaky_relu
             )
-            ph_dense = tf.layers.dense(
+            tf.summary.histogram('ph_dense_1', ph_dense_1)
+            ph_out = tf.layers.dense(
                 inputs=ph_dense_1,
                 units=self.policy_head_dim,
                 use_bias=True,
-                activation=tf.nn.tanh,
-                name='policy_head'
+                activation=None
             )
+            tf.summary.histogram('ph_out', ph_out)
 
-        return ph_dense
+        return ph_out
 
-    def conv2d(self, inputs, padding):
-        return tf.layers.conv2d(inputs, self.filters, self.kernel_size, padding)
+    def conv2d(self, inputs):
+        return tf.layers.conv2d(
+            inputs,
+            self.filters,
+            self.kernel_size,
+            padding= self.padding,
+            data_format = 'channels_first')
 
     def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.9, BATCH_EPSILON=1e-5):
         return tf.layers.batch_normalization(
@@ -179,19 +183,18 @@ class NN():
                 padding (int): "valid" or "SAME"
                 training (bool): True if training
         """
-        shortcut = tf.identity(inputs)
-        conv1 = tf.layers.conv2d(inputs, self.filters,
-                                 self.kernel_size, padding='same')
+        shortcut = tf.nn.relu(tf.identity(inputs))
+        conv1 = self.conv2d(inputs)
         conv1_bn = self.batch_norm(conv1, training)
         y = conv1_bn + shortcut
-        y_relu = tf.nn.relu(y)
-        return y_relu
+        return y
 
     def _cross_entropy_with_logits(self):
         with tf.variable_scope('Loss_in_policy_head'):
-            loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                logits=self.policy_head, labels=self.policy_label)
-            loss = tf.reduce_mean(loss)
+            normalized_policy = (1 + self.policy_label)/ 2
+            tf.summary.histogram('policy_label', normalized_policy)
+            loss = tf.losses.sigmoid_cross_entropy(normalized_policy,
+                logits=self.policy_head)
         return loss
 
     def _mean_sq_error(self):
@@ -242,10 +245,9 @@ class NN():
         tf.summary.scalar('policy_head_loss', self.ce_loss)
         tf.summary.scalar('value_head_loss', self.mse_loss)
         tf.summary.scalar('total_loss', self.loss)
-        tf.summary.histogram('ph', self.policy_head)
 
         if opt_type == 'AdamOptimizer':
-            optimizer = tf.train.AdamOptimizer(self.lr)
+            optimizer = tf.train.AdamOptimizer(self.lr, beta1 = 0.95)
         else:
             optimizer = tf.train.GradientDescentOptimizer(self.lr)
 
@@ -306,6 +308,7 @@ class NN():
                 if step % 20 == 0:
                     summary_str = sess.run(summary_op, feed_dict=feed_dict)
                     summary_writer.add_summary(summary_str, step)
+
                 if step % 1000 == 0:  # store model every 1000 iteration times, may be changed due to # of network parameters
                     saver.save(sess, model_saver_path, global_step=step)
 
