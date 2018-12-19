@@ -67,6 +67,8 @@ def set_mode(mode, num_simulations, total_episodes):
         save_episodes = True
         ai.DEBUG = True
         ai_old.DEBUG = True
+        ai.use_nn = False
+        ai_old.use_nn = False
 
         print("Mode: debug.")
         print("Parallel simulations: ", num_simulations)

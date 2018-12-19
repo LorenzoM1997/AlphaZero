@@ -6,8 +6,9 @@ import math
 import os
 import shutil
 
+
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size = 3, filters=32, strides=1, padding="SAME"):
+    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size=3, filters=32, strides=1, padding="same"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
@@ -25,7 +26,7 @@ class NN():
         self.input_dim = input_dim
         self.num_hidden_layers = num_hidden_layers
         self.filters = filters
-        self.strides = [1, strides, strides, 1]
+        self.strides = (strides, strides)
         self.padding = padding
         self.kernel_size = kernel_size
         self.policy_head_dim = policy_head_dim
@@ -35,6 +36,7 @@ class NN():
 
         self.inputs = tf.placeholder(tf.float32, shape=np.append(
             None, input_dim).tolist())  # Variable batch size
+
         self.training = tf.placeholder(tf.bool)
         self.policy_label = tf.placeholder(tf.float32,
                                            shape=np.append(None, policy_head_dim).tolist())
@@ -47,7 +49,7 @@ class NN():
         self.train_op = self.train()
         self.saver = tf.train.Saver()
 
-    def create_directory(self,model_path = 'model'):
+    def create_directory(self, model_path='model'):
         """ create directories to store checkpoint files
         Args:
             model_saver_path: path for storing model obtained during training process
@@ -76,20 +78,20 @@ class NN():
 
             # first convolutional layer is different
             with tf.variable_scope('Residual_Block_1'):
-                initial_filter = tf.Variable(tf.random_uniform(
-                    [self.kernel_size, self.kernel_size, self.input_dim[2], self.filters]))
-                first_layer = tf.nn.conv2d(
-                    self.inputs, initial_filter, self.strides, self.padding)
+                first_layer = self.conv2d(self.inputs)
                 hidden_layers.append(first_layer)
 
                 resblk = self.resBlock(first_layer, self.filters,
-                    True, strides=self.strides, padding=self.padding)
+                                       True, strides=self.strides, padding=self.padding)
                 hidden_layers.append(resblk)
 
             if self.num_hidden_layers > 1:
                 for i in range(self.num_hidden_layers-1):
                     with tf.variable_scope('Residual_Block_'+str(i+2)):
-                        resblk = self.resBlock(resblk, self.filters, True, self.strides, self.padding)
+                        resblk = self.resBlock(
+                            resblk, self.filters, True, self.strides, self.padding)
+                    
+                    tf.summary.histogram('residual_block_'+str(i+2), resblk)
 
                     hidden_layers.append(resblk)
 
@@ -103,26 +105,25 @@ class NN():
 
         # goes back from n channels to 1
         with tf.variable_scope('Value_head'):
-            vh_filter = tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, self.filters, 1]))
-            vh = tf.nn.conv2d(
-                self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
-
+            vh = self.conv2d(self.hidden_layers[-1])
             vh_bn = self.batch_norm(vh, self.training)
             vh_bn_relu = tf.nn.relu(vh_bn)
             vh_flat = tf.layers.flatten(vh_bn_relu)
             vh_dense = tf.layers.dense(
                 inputs=vh_flat,
-                units=20,  # Arbitrary number. Consider decreasing for connect4.
-                use_bias=False,
+                # Arbitrary number. Consider decreasing for connect4.
+                units=10,
+                use_bias=True,
                 activation=tf.nn.leaky_relu
             )
+            tf.summary.histogram('vh_dense', vh_dense)
             vh_out = tf.layers.dense(
                 inputs=vh_dense,
                 units=1,
-                use_bias=False,
+                use_bias=True,
                 activation=tf.nn.tanh
             )
+            tf.summary.histogram('vh_out', vh_out)
         return vh_out
 
     def _build_policy_head(self):
@@ -133,32 +134,34 @@ class NN():
         with tf.variable_scope('Policy_head'):
 
             # goes back from n channels to 1
-            ph_filter = tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, self.filters, 1]))
-            ph = tf.nn.conv2d(
-                self.hidden_layers[-1], ph_filter, [1, 1, 1, 1], "SAME")
-
+            ph = self.conv2d(self.hidden_layers[-1])
             ph_bn = self.batch_norm(ph, self.training)
             ph_bn_relu = tf.nn.relu(ph_bn)
             ph_flat = tf.layers.flatten(ph_bn_relu)
-            ph_dense = tf.layers.dense(
+            ph_dense_1 = tf.layers.dense(
                 inputs=ph_flat,
-                units=self.policy_head_dim,
-                use_bias=False,
-                activation=tf.nn.tanh,
-                name='policy_head'
+                units=20,
+                use_bias=True,
+                activation=tf.nn.leaky_relu
             )
+            tf.summary.histogram('ph_dense_1', ph_dense_1)
+            ph_out = tf.layers.dense(
+                inputs=ph_dense_1,
+                units=self.policy_head_dim,
+                use_bias=True,
+                activation=None
+            )
+            tf.summary.histogram('ph_out', ph_out)
 
-        return ph_dense
+        return ph_out
 
-    def conv2d(self, inputs, channels, strides, padding):
-        return tf.nn.conv2d(
-            input=inputs,
-            filter=tf.Variable(tf.random_uniform(
-                [self.kernel_size, self.kernel_size, channels, channels])),
-            strides=strides,
-            padding=padding,
-        )
+    def conv2d(self, inputs):
+        return tf.layers.conv2d(
+            inputs,
+            self.filters,
+            self.kernel_size,
+            padding= self.padding,
+            data_format = 'channels_first')
 
     def batch_norm(self, inputs, training, BATCH_MOMENTUM=0.9, BATCH_EPSILON=1e-5):
         return tf.layers.batch_normalization(
@@ -180,26 +183,24 @@ class NN():
                 padding (int): "valid" or "SAME"
                 training (bool): True if training
         """
-        shortcut = tf.identity(inputs)
-        conv1 = self.conv2d(inputs, filters, strides, padding)
+        shortcut = tf.nn.relu(tf.identity(inputs))
+        conv1 = self.conv2d(inputs)
         conv1_bn = self.batch_norm(conv1, training)
-        conv1_bn_relu = tf.nn.relu(conv1_bn)
-        conv2 = self.conv2d(conv1_bn_relu, filters, strides, padding)
-        conv2_bn = self.batch_norm(conv2, training)
-        y = conv2_bn + shortcut
-        y_relu = tf.nn.relu(y)
-        return y_relu
+        y = conv1_bn + shortcut
+        return y
 
     def _cross_entropy_with_logits(self):
         with tf.variable_scope('Loss_in_policy_head'):
-            loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                logits=self.policy_head, labels=self.policy_label)
-            loss = tf.reduce_mean(loss)
+            normalized_policy = (1 + self.policy_label)/ 2
+            tf.summary.histogram('policy_label', normalized_policy)
+            loss = tf.losses.sigmoid_cross_entropy(normalized_policy,
+                logits=self.policy_head)
         return loss
 
     def _mean_sq_error(self):
         with tf.variable_scope('Loss_in_value_head'):
-            mse = tf.losses.mean_squared_error(self.value_label, self.value_head)
+            mse = tf.losses.mean_squared_error(
+                self.value_label, self.value_head)
         return mse
 
     def getBatch(self, X, train_step, batch_size, value_labels, policy_labels):
@@ -244,10 +245,9 @@ class NN():
         tf.summary.scalar('policy_head_loss', self.ce_loss)
         tf.summary.scalar('value_head_loss', self.mse_loss)
         tf.summary.scalar('total_loss', self.loss)
-        tf.summary.histogram('ph', self.policy_head)
 
         if opt_type == 'AdamOptimizer':
-            optimizer = tf.train.AdamOptimizer(self.lr)
+            optimizer = tf.train.AdamOptimizer(self.lr, beta1 = 0.95)
         else:
             optimizer = tf.train.GradientDescentOptimizer(self.lr)
 
@@ -255,8 +255,7 @@ class NN():
 
         return apply_gradient_op
 
-
-    def fit(self, X, v_lab, p_lab, batch_size = 100, epoch = 1000, model_saver_path = '/model1/'):
+    def fit(self, X, v_lab, p_lab, batch_size=100, epoch=1000, model_saver_path='/model1/'):
         """training model and save
         Args:
             X: input
@@ -267,14 +266,13 @@ class NN():
             model_saver_path: path for storing model obtained during training process
             summary_path: path for storing summaries of loss
         """
-        #print(os.getcwd())
+        # print(os.getcwd())
         model_saver_path = os.path.join(os.getcwd(), model_saver_path)
-        #print(model_saver_path)
+        # print(model_saver_path)
         if not os.path.exists(model_saver_path):
             os.mkdir(model_saver_path)
         train_iterations = math.ceil(X.shape[0]*epoch/batch_size)
 
-        
         final_model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
         model_saver_path = os.path.join(model_saver_path, 'model.ckpt')
 
@@ -283,26 +281,26 @@ class NN():
 
         saver = self.saver
 
-        #if gpu
+        # if gpu
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
-        #with tf.Session(config=config) as sess:
-
+        # with tf.Session(config=config) as sess:
 
         with tf.Session() as sess:
             # Initialize session.
             sess.run(init)
 
             # Initialize summary writer.
-            summary_writer = tf.summary.FileWriter('model/summary', graph=sess.graph)
+            summary_writer = tf.summary.FileWriter(
+                'model/summary', graph=sess.graph)
 
             for step in range(train_iterations):
                 [batch_X, batch_Y, batch_Z] = self.getBatch(
                     X, step, batch_size, v_lab, p_lab)
 
-                feed_dict = {self.inputs: batch_X, 
-                             self.value_label: batch_Y, 
-                             self.policy_label: batch_Z, 
+                feed_dict = {self.inputs: batch_X,
+                             self.value_label: batch_Y,
+                             self.policy_label: batch_Z,
                              self.training: True}
 
                 sess.run(self.train_op, feed_dict=feed_dict)
@@ -310,7 +308,8 @@ class NN():
                 if step % 20 == 0:
                     summary_str = sess.run(summary_op, feed_dict=feed_dict)
                     summary_writer.add_summary(summary_str, step)
-                if step % 1000 == 0: #store model every 1000 iteration times, may be changed due to # of network parameters
+
+                if step % 1000 == 0:  # store model every 1000 iteration times, may be changed due to # of network parameters
                     saver.save(sess, model_saver_path, global_step=step)
 
             saver.save(sess, final_model_saver_path)
@@ -327,7 +326,7 @@ class NN():
         self.saver = tf.train.import_meta_graph(meta_path)
         self.saver.restore(self.sess, model_path)
 
-    def pred(self,new_input):
+    def pred(self, new_input):
         """
         args:
             new_input: a matrix of shape (1, num_layers, num_rows, num_cols)
@@ -336,11 +335,11 @@ class NN():
             a list [vh pred, ph_pred]
         """
 
-        #if gpu
+        # if gpu
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
-        #with tf.Session(config=config) as sess:
-        vh_pred, ph_pred = self.sess.run([self.value_head, self.policy_head], feed_dict={self.inputs: new_input, self.training: False})
+        # with tf.Session(config=config) as sess:
+        vh_pred, ph_pred = self.sess.run([self.value_head, self.policy_head], feed_dict={
+                                         self.inputs: new_input, self.training: False})
 
         return [vh_pred, ph_pred]
-
