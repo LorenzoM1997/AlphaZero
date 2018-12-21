@@ -109,13 +109,13 @@ class NN():
 				self.hidden_layers[-1], vh_filter, [1, 1, 1, 1], "SAME")
 
 			vh_bn = self.batch_norm(vh, self.training)
-			#vh_bn_relu = tf.nn.relu(vh_bn)
-			vh_flat = tf.layers.flatten(vh_bn)
+			vh_bn_relu = tf.nn.relu(vh_bn)
+			vh_flat = tf.layers.flatten(vh_bn_relu)
 			vh_dense = tf.layers.dense(
 				inputs=vh_flat,
 				units=20,  # Arbitrary number. Consider decreasing for connect4.
 				use_bias=False,
-				activation=None
+				activation=tf.nn.relu
 			)
 			vh_out = tf.layers.dense(
 				inputs=vh_dense,
@@ -139,8 +139,8 @@ class NN():
 				self.hidden_layers[-1], ph_filter, [1, 1, 1, 1], "SAME")
 
 			ph_bn = self.batch_norm(ph, self.training)
-			#ph_bn_relu = tf.nn.relu(ph_bn)
-			ph_flat = tf.layers.flatten(ph_bn)
+			ph_bn_relu = tf.nn.relu(ph_bn)
+			ph_flat = tf.layers.flatten(ph_bn_relu)
 			ph_dense = tf.layers.dense(
 				inputs=ph_flat,
 				units=self.policy_head_dim,
