@@ -49,7 +49,7 @@ def load_data_for_training(game):
     for file in files:
         print(file)
         try:
-            data = pickle.load(open(os.path.append(mypath,file), "rb")
+            data = pickle.load(open(os.path.join(mypath,file), "rb")
                                )  # load the data from file
         except:
             print("Data not found in ", file)
