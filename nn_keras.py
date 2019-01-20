@@ -5,6 +5,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Conv2D, DepthwiseConv2D, SeparableConv2D
 from tensorflow.keras.layers import Flatten, MaxPool2D, AvgPool2D, GlobalAvgPool2D, UpSampling2D
 from tensorflow.keras.layers import BatchNormalization, concatenate, add, Dropout, ReLU, Lambda, Activation, LeakyReLU
+from tensorflow.keras import optimizers
 
 from IPython.display import SVG
 #from keras.utils.vis_utils import model_to_dot
@@ -39,9 +40,6 @@ class NN():
         self.value_head = Dense(1, activation='tanh')(self.flat)
 
         self.model = Model(inputs = self.input, outputs = [self.policy_head, self.value_head])
-
-        #loss
-        self.model.compile(optimizer='sgd', loss = self.loss_function)
 
     def conv_bn_rl(self, x, f, k=1, s=1, p='same'):
         x = Conv2D(f, k, strides=s, padding=p)(x)
@@ -88,7 +86,7 @@ class NN():
 
     def loss_function(self, yTrue, yPred):
 
-        policy_label = K.softmax((yTrue[0] + 1) * 0.5) # normalize policy labels
+        policy_label = K.softmax(yTrue[0]) # normalize policy labels
         value_label = yTrue[1]
         policy_head = yPred[0]
         value_head = yPred[1]
@@ -101,8 +99,21 @@ class NN():
     #def pre_run(self, model_path='/model1/'):
 
     def fit(self, X, v_lab, p_lab, batch_size=100, epochs=1000, model_saver_path='/model1/'):
-        p_lab = K.softmax((p_lab + 1) * 0.5)
-        self.model.fit(X, [p_lab, v_lab], epochs=epochs, batch_size=batch_size)
+        p_lab = (p_lab + 1) * 0.5
+
+        sgd = optimizers.SGD(lr = 0.1)
+        self.model.compile(optimizer=sgd, loss = self.loss_function)
+        first_step = int(epochs/4)
+        self.model.fit(X, [p_lab, v_lab], epochs=first_step, batch_size=batch_size)
+
+        sgd.lr = 0.001
+        self.model.compile(optimizer=sgd, loss = self.loss_function)
+        second_step = int(epochs/2)
+        self.model.fit(X, [p_lab, v_lab], epochs=second_step, batch_size=batch_size)
+
+        adam = optimizers.Adam()
+        self.model.compile(optimizer=adam, loss = self.loss_function)
+        self.model.fit(X, [p_lab, v_lab], epochs=first_step, batch_size=batch_size)
 
     def pred(self, X):
         prediction = self.model.predict(X)
