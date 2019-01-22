@@ -36,8 +36,11 @@ class NN():
   
         self.flat = Flatten()(self.hidden_layers[-1])
   
-        self.policy_head = Dense(policy_head_dim, activation='softmax')(self.flat)
-        self.value_head = Dense(1, activation='tanh')(self.flat)
+        self.ph_dense = Dense(20, activation = 'relu')(self.flat)
+        self.policy_head = Dense(policy_head_dim, activation='softmax')(self.ph_dense)
+
+        self.vh_dense = Dense(20, activation = 'relu')(self.flat)
+        self.value_head = Dense(1, activation='tanh')(self.vh_dense)
 
         self.model = Model(inputs = self.input, outputs = [self.policy_head, self.value_head])
 
@@ -91,7 +94,7 @@ class NN():
         policy_head = yPred[0]
         value_head = yPred[1]
 
-        cross_entropy = keras.losses.categorical_crossentropy(policy_label, policy_head)
+        cross_entropy = keras.losses.mean_squared_error(policy_label, policy_head)
         mse = keras.losses.mean_squared_error(value_label, value_head)
         loss = K.sum(cross_entropy + mse)
         return loss
