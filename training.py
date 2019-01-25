@@ -1,5 +1,6 @@
 import fnmatch
 import os
+import sys
 import pickle
 import tensorflow as tf
 from nn import *
@@ -10,6 +11,10 @@ from nn import NN
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+# Default parmeters
+GAMENAME = 'TicTacToe'
+CONVLAYERS = 1 
+RESLAYERS = 5
 
 def find(pattern, path):
     """
@@ -35,7 +40,7 @@ def load_data_for_training(game):
         P (matrix) vector of values from MCTS child nodes
         V (matrix) final outcome of each game
     """
-
+    # TODO: Change mypath
     mypath = 'saved'
     # list of files
     files = find(game.name + '*', mypath)
@@ -104,7 +109,7 @@ class NetTrainer():
     manages the two neural networks (older and newest)
     """
 
-    def __init__(self, game, residual_layers=5):
+    def __init__(self, game, convLayers, resBlocks):
         """
         Args:
             game: A Game object
@@ -113,8 +118,11 @@ class NetTrainer():
         self.game = game
         input_shape = game.layers().shape
         policy_shape = len(game.action_space)
-
-        self.nnet = NN(input_shape, residual_layers, policy_shape, True)
+        # TODO: Modify NN: 
+            # Change to Keras
+            # Add a convLayers arg to NN
+        self.nnet = NN(input_shape, convLayers, resBlocks, policy_shape, True)
+        # TODO: Change checkpoint paths
         self.path_1 = 'model/checkpoint/old/'
         self.path_2 = 'model/checkpoint/new/'
 
@@ -152,9 +160,34 @@ class NetTrainer():
         """
         return self.nnet.pred(new_input)
 
+def getGame(gameName):
+    # Returns game class depending on game name
+    if gameName == 'TicTacToe':
+        return TicTacToe()
+    elif gameName == 'ConnectFour':
+        return ConnectFour()
+    else:
+        print("The game name is invalid")
+        sys.exit(0)
+
+def getArgs():
+    """ Ensures that the proper number of command line arguments are fed, and then fetches them.
+    Returns: game(?), convLayers, resLayers
+    """
+
+    if len(sys.argv) == 4:
+        game = getGame(sys.argv[1])
+        return game, sys.argv[2], sys.argv[3]
+    elif len(sys.argv) == 1:
+        return GAMENAME, CONVLAYERS, RESLAYERS 
+    else:
+        print("Invalid number of command line arguments. \nCorrect usage: \
+            \t1) No additional arguments: Default is TicTacToe, 1 convLayer, 5 resBlocks \
+            \t2) 3 cmd line arguments: gameName, numConvLayers, numResBlocks")
+        sys.exit(0)
 
 if __name__ == "__main__":
-    game = TicTacToe()
-    Trainer = NetTrainer(game)
+    game, convLayers, resBlocks = getArgs()
+    Trainer = NetTrainer(game, convLayers, resBlocks)
     Trainer.train('old')
     Trainer.train('new')
