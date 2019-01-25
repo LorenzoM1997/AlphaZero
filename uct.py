@@ -5,7 +5,6 @@ from math import log, sqrt
 from random import choice
 
 
-
 class Stat(object):
     __slots__ = ('value', 'visits')
 
@@ -29,10 +28,9 @@ class UCT(object):
         self.memorize = True
 
         # Heauristics
-        self.referenceTime = time.time()
         self.useDiscounting = True
 
-        self.calculation_time = float(kwargs.get('time', 10))
+        self.calculation_time = float(kwargs.get('time', 20))
         self.max_actions = int(kwargs.get('max_actions', 1000))
 
         # Exploration constant, increase for more exploratory actions,
@@ -68,7 +66,6 @@ class UCT(object):
             return legal[0]
 
         begin = time.time()
-        self.referenceTime = time.time()
         while time.time() - begin < self.calculation_time:
             if games >= 1600:
                 break
@@ -168,7 +165,7 @@ class UCT(object):
             S.visits += 1
 
             if self.useDiscounting:
-                S.value += (end_values * multiplier)/self.referenceTime
+                S.value += (end_values * multiplier)/(i + 1)
             else:
                 S.value += end_values * multiplier
 

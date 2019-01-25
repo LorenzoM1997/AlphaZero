@@ -41,7 +41,7 @@ class Checkers(Game):
             for j in range(32):
                 action_space[i, j] = np.array([i, j])
 
-        super().__init__(8, 4, 2, action_space, 'Checkers')
+        super().__init__(8, 4, 4, action_space, 'Checkers')
 
     def tile_to_row_col(self, tile):
         """

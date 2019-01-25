@@ -20,7 +20,7 @@ from training import *
 import uct
 
 # change the following line to change game
-game_interface = TicTacToe()
+game_interface = ConnectFour()
 game = GameGlue(game_interface)
 
 
@@ -187,10 +187,10 @@ if __name__ == "__main__":
 
     # how many processes are you starting in parallel
     num_simulations = 4
-    total_episodes = 100
+    total_episodes = 200
 
     #  modes: 'training', 'manual', 'debug', 'evaluation'
-    mode = 'evaluation'
+    mode = 'manual'
     set_mode(mode, num_simulations, total_episodes)
 
     from settings import num_episodes, save_episodes, render_game
@@ -213,7 +213,7 @@ if __name__ == "__main__":
         #  testing manually
         tasks.put(1)
         simulation(results, tasks, render=True, main_player=partial(
-            ai_move, ai), opponent=manual_move, save_episodes=save_episodes)
+            ai_move, ai, command_list[0], input_list[0], output_list[0]), opponent=manual_move, save_episodes=save_episodes)
 
     elif mode == 'debug':
 
