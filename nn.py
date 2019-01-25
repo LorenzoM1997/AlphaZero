@@ -8,12 +8,12 @@ import shutil
 
 
 class NN():
-    def __init__(self, input_dim, num_hidden_layers, policy_head_dim, training, lr=0.00025, kernel_size=3, filters=32, strides=1, padding="same"):
+    def __init__(self, input_dim, num_convLayers, num_resBlocks, policy_head_dim, training, lr=0.00025, kernel_size=3, filters=32, strides=1, padding="same"):
         """ 
         Args:
             input_dim (int tuple/list): Length, height, layers of input
             training (bool): True if model is training
-            num_hidden_layers (int): Number of hidden layers
+            num_resBlocks (int): Number of hidden layers
             lr (float): Learning rate
             filters (int): num features in output of convolution
             strides (int tuple/list or int): Stride of convolution
@@ -24,7 +24,8 @@ class NN():
 
         self.lr = lr
         self.input_dim = input_dim
-        self.num_hidden_layers = num_hidden_layers
+        self.num_convLayers = num_convLayers
+        self.num_resBlocks = num_resBlocks
         self.filters = filters
         self.strides = (strides, strides)
         self.padding = padding
@@ -73,6 +74,8 @@ class NN():
         Returns:
             List of resBlocks
         """
+
+        # TODO: Create new scope Conv_Layers
         with tf.variable_scope('Residual_Blocks'):
             hidden_layers = []
 
@@ -85,8 +88,8 @@ class NN():
                                        True, strides=self.strides, padding=self.padding)
                 hidden_layers.append(resblk)
 
-            if self.num_hidden_layers > 1:
-                for i in range(self.num_hidden_layers-1):
+            if self.num_resBlocks > 1:
+                for i in range(self.num_resBlocks-1):
                     with tf.variable_scope('Residual_Block_'+str(i+2)):
                         resblk = self.resBlock(
                             resblk, self.filters, True, self.strides, self.padding)
