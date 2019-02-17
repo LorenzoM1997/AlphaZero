@@ -1,5 +1,5 @@
 # AlphaZero
-ECS 171 Machine Learning project
+Machine learning project to recreate, in smaller scale, the AlphaZero algorithm by Google Deepmind. Testing the algorithm on Tic-Tac-Toe, Connect4, and Checkers.
 
 ## Setup
 
